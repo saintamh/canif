@@ -1,0 +1,132 @@
+[
+{
+"name": "Suspended Routes",
+"id": 1274430,
+"displayOnLoad": false
+},
+{
+"name": "Roosevelt Island Operating Corporation",
+"id": 1274431,
+"displayOnLoad": true
+},
+{
+"name": "Huntington Area Rapid Transit",
+"id": 1274432,
+"displayOnLoad": true
+},
+{
+"name": "Ferries",
+"id": 1274433,
+"displayOnLoad": true
+},
+{
+"name": "Putnam Transit",
+"id": 1274434,
+"displayOnLoad": true
+},
+{
+"name": "Suffolk County Transit",
+"id": 1274435,
+"displayOnLoad": true
+},
+{
+"name": "Nassau Inter-County Express",
+"id": 1274436,
+"displayOnLoad": true
+},
+{
+"name": "Bee-Line Bus System",
+"id": 1274437,
+"displayOnLoad": true
+},
+{
+"name": "NJ Transit Bus",
+"id": 1274438,
+"displayOnLoad": true
+},
+{
+"name": "New York City Bus",
+"id": 1274441,
+"displayOnLoad": true
+},
+{
+"name": "New York City Bus",
+"id": 1274439,
+"displayOnLoad": true
+},
+{
+"name": "AirTrain Newark",
+"id": 1274440,
+"displayOnLoad": true
+},
+{
+"name": "AirTrain JFK",
+"id": 1274442,
+"displayOnLoad": true
+},
+{
+"name": "AirTrain JFK",
+"id": 1274443,
+"displayOnLoad": true
+},
+{
+"name": "NJ Transit Rail",
+"id": 1274444,
+"displayOnLoad": true
+},
+{
+"name": "NJ Transit Rail",
+"id": 1274445,
+"displayOnLoad": true
+},
+{
+"name": "Metro-North Railroad",
+"id": 1274446,
+"displayOnLoad": true
+},
+{
+"name": "Metro-North Railroad",
+"id": 1274447,
+"displayOnLoad": true
+},
+{
+"name": "Long Island Rail Road",
+"id": 1274449,
+"displayOnLoad": true
+},
+{
+"name": "Long Island Rail Road",
+"id": 1274448,
+"displayOnLoad": true
+},
+{
+"name": "PATH",
+"id": 1274450,
+"displayOnLoad": true
+},
+{
+"name": "PATH",
+"id": 1274451,
+"displayOnLoad": true
+},
+{
+"name": "Staten Island Railway",
+"id": 1274452,
+"displayOnLoad": true
+},
+{
+"name": "Staten Island Railway",
+"id": 1274453,
+"displayOnLoad": true
+},
+{
+"name": "New York City Subway",
+"id": 1274454,
+"displayOnLoad": true
+},
+{
+"name": "New York City Subway",
+"id": 1274455,
+"displayOnLoad": true
+}
+]
