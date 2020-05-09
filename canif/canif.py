@@ -3,7 +3,6 @@
 # standards
 import argparse
 from io import StringIO
-import json
 from os import linesep
 import re
 import sys
@@ -32,6 +31,11 @@ def parse_command_line(
         help='Ensure output is valid JSON (e.g. None becomes null)',
     )
     parser.add_argument(
+        '--ensure-ascii',
+        action='store_true',
+        help=r'Ensure JSON output is ASCII by using \uXXXX sequences in place of non-ASCII characters',
+    )
+    parser.add_argument(
         '--input-encoding',
         default=default_input_encoding,
         help='Character set used for decoding the input',
@@ -53,7 +57,7 @@ def run(options, input_bytes):
         output_buffer = StringIO()
         try:
             lexer = Lexer(input_text)
-            builder = PrettyPrintBuilder(output_buffer, flatten=options.flatten)
+            builder = PrettyPrintBuilder(output_buffer, flatten=options.flatten, ensure_ascii=options.ensure_ascii)
             parser = Parser(lexer, builder)
             parser.document()
             output_text = output_buffer.getvalue()
