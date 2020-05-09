@@ -8,151 +8,157 @@ class ParserError(ValueError):
     pass
 
 
+undefined = object()
+
+
 class Parser:
 
     named_constants = {
-        'true': True,
-        'True': True,
-        'false': False,
-        'False': False,
-        'null': None,
-        'None': None,
-        'undefined': {'$undefined': True},
-        'NotImplemented': 'NotImplemented',
+        'true',
+        'True',
+        'false',
+        'False',
+        'null',
+        'None',
+        'undefined',
+        'NotImplemented',
     }
 
     def __init__(self, lexer, builder):
         self.lexer = lexer
         self.builder = builder
 
-    def _select(self, expected, *functions):
-        undefined = object()
+    def _one_of(self, *functions, expected=None):
         for function in functions:
-            value = next(function(), undefined)
+            value = function()
             if value is not undefined:
                 return value
-        self.lexer.error(expected)
+        if expected:
+            self.lexer.error(expected)
+        return undefined
 
     def document(self):
-        document = self.expression()
+        document = self.expression(checked=True)
         self.lexer.pop(r'$', checked=True)
         return self.builder.document(document)
 
-    def expression(self):
-        return self._select('expression', self.maybe_expression)
+    def expression(self, checked=False):
+        return self._one_of(
+            self.square_bracketed_array,
+            self.round_bracketed_array,
+            self.mapping_or_set,
+            self.single_quoted_string,
+            self.double_quoted_string,
+            self.regex_literal,
+            self.number,
+            self.named_constant,
+            self.function_call,
+            self.identifier,
+            self.python_repr_expression,
+            expected=('expression' if checked else None),
+        )
 
-    def maybe_expression(self):
-        functions = [
-            self.maybe_square_bracketed_array,
-            self.maybe_round_bracketed_array,
-            self.maybe_mapping_or_set,
-            self.maybe_single_quoted_string,
-            self.maybe_double_quoted_string,
-            self.maybe_regex_literal,
-            self.maybe_number,
-            self.maybe_named_constant,
-            self.maybe_function_call,
-            self.maybe_identifier,
-            self.maybe_python_repr_expression,
-        ]
-        undefined = object()
-        for function in functions:
-            value = next(function(), undefined)
-            if value is not undefined:
-                yield value
-                break
-
-    def maybe_number(self):
-        match = self.lexer.pop(r'[\+\-]?\d+(?:\.\d+)?(?:[eE][\+\-]?\d+)?')
+    def number(self, checked=False):
+        match = self.lexer.pop(r'[\+\-]?\d+(?:\.\d+)?(?:[eE][\+\-]?\d+)?', checked)
         if match:
             text = match.group()
             if re.search(r'[\.eE]', text):
-                yield self.builder.float(text)
+                return self.builder.float(text)
             else:
-                yield self.builder.int(text)
+                return self.builder.int(text)
+        return undefined
 
-    def maybe_named_constant(self):
-        match = self.lexer.pop(r'|'.join(self.named_constants))
-        if match:
-            yield self.builder.named_constant(self.named_constants[match.group()])
+    def named_constant(self, checked=False):
+        match = self.lexer.pop(r'|'.join(self.named_constants), checked)
+        if not match:
+            return undefined
+        return self.builder.named_constant(match.group())
 
-    def maybe_square_bracketed_array(self):
-        if self.lexer.pop(r'\['):
-            yield self._array(r'\]')
+    def square_bracketed_array(self, checked=False):
+        if not self.lexer.pop(r'\[', checked):
+            return undefined
+        return self._array(r'\]')
 
-    def maybe_round_bracketed_array(self):
-        if self.lexer.pop(r'\('):
-            yield self._array(r'\)')
+    def round_bracketed_array(self, checked=False):
+        if not self.lexer.pop(r'\(', checked):
+            return undefined
+        return self._array(r'\)')
 
     def _array(self, re_end):
         parsed = []
         while not self.lexer.peek(re_end):
-            parsed.append(self.expression())
+            parsed.append(self.expression(checked=True))
             if not self.lexer.pop(r',', checked=(re_end == r'\)' and len(parsed) == 1)):
                 break
         self.lexer.pop(re_end, checked=True)
         return self.builder.array(parsed)
 
-    def maybe_mapping_or_set(self):
-        if self.lexer.pop(r'\{'):
-            if self.lexer.pop(r'\}'):
-                yield self.builder.mapping({})
+    def mapping_or_set(self, checked=False):
+        if not self.lexer.pop(r'\{', checked):
+            return undefined
+        if self.lexer.pop(r'\}'):
+            return self.builder.mapping({})
+        else:
+            value = self._one_of(
+                self.mapping_key,
+                self.expression,
+            )
+            if value is not undefined and (self.lexer.pop(r',') or self.lexer.peek(r'\}')):
+                return self._set(value)
             else:
-                undefined = object()
-                value = next(self.maybe_expression(), undefined)
-                if value is not undefined and (self.lexer.pop(r',') or self.lexer.peek(r'\}')):
-                    yield self._finish_set(value)
-                else:
-                    first_key = self.mapping_key() if value is undefined else value
-                    yield self._finish_mapping(first_key)
+                first_key = self.mapping_key(checked=True) if value is undefined else value
+                return self._mapping(first_key)
 
-    def _finish_set(self, first_value):
+    def _set(self, first_value):
         elements = [first_value]
         while not self.lexer.pop(r'\}'):
-            elements.append(self.expression())
+            elements.append(self.expression(checked=True))
             if not self.lexer.pop(r','):
                 self.lexer.pop(r'\}', checked=True)
                 break
         return self.builder.set(elements)
 
-    def _finish_mapping(self, first_key):
+    def _mapping(self, first_key):
         self.lexer.pop(r':', checked=True)
-        items = {first_key: self.expression()}
+        items = {first_key: self.expression(checked=True)}
         if self.lexer.pop(r','):
             while not self.lexer.peek(r'\}'):
-                key = self.mapping_key()
+                key = self.mapping_key(checked=True)
                 self.lexer.pop(r':', checked=True)
-                items[key] = self.expression()
+                items[key] = self.expression(checked=True)
                 if not self.lexer.pop(r','):
                     break
         self.lexer.pop(r'\}', checked=True)
         return self.builder.mapping(items)
 
-    def mapping_key(self):
-        return self._select(
-            'key',
-            self.maybe_single_quoted_string,
-            self.maybe_double_quoted_string,
-            self.maybe_number,
-            self.maybe_identifier,
-            self.maybe_round_bracketed_array,
+    def mapping_key(self, checked=False):
+        return self._one_of(
+            self.single_quoted_string,
+            self.double_quoted_string,
+            self.number,
+            self.unquoted_key,
+            self.round_bracketed_array,
+            expected=('key' if checked else None),
         )
 
-    def maybe_single_quoted_string(self):
-        if self.lexer.pop(r"'", do_skip=False):
-            match = self.lexer.pop(r"((?:[^\\\']|\\.)*)\'", checked=True)
-            yield self.builder.string(self._parse_string_escapes(match.group(1)))
+    def single_quoted_string(self, checked=False):
+        if not self.lexer.pop(r"'", checked, do_skip=False):
+            return undefined
+        match = self.lexer.pop(r"((?:[^\\\']|\\.)*)\'", checked=True)
+        return self.builder.string(self._parse_string_escapes(match.group(1)))
 
-    def maybe_double_quoted_string(self):
-        if self.lexer.pop(r'"', do_skip=False):
-            match = self.lexer.pop(r'((?:[^\\\"]|\\.)*)\"', checked=True)
-            yield self.builder.string(self._parse_string_escapes(match.group(1)))
+    def double_quoted_string(self, checked=False):
+        if not self.lexer.pop(r'"', checked, do_skip=False):
+            return undefined
+        match = self.lexer.pop(r'((?:[^\\\"]|\\.)*)\"', checked=True)
+        return self.builder.string(self._parse_string_escapes(match.group(1)))
 
-    def maybe_regex_literal(self):
-        if self.lexer.pop(r'/', do_skip=False):
-            match = self.lexer.pop(r'((?:[^\\/]|\\.)*)/(\w*)', checked=True)
-            raw_pattern, flags = match.groups()
-            yield self.builder.regex(self._parse_string_escapes(raw_pattern), flags)
+    def regex_literal(self, checked=False):
+        if not self.lexer.pop(r'/', checked, do_skip=False):
+            return undefined
+        match = self.lexer.pop(r'((?:[^\\/]|\\.)*)/(\w*)', checked=True)
+        raw_pattern, flags = match.groups()
+        return self.builder.regex(self._parse_string_escapes(raw_pattern), flags)
 
     @staticmethod
     def _parse_string_escapes(raw_text):
@@ -177,42 +183,51 @@ class Parser:
             raw_text,
         )
 
-    def maybe_python_repr_expression(self):
-        match = self.lexer.pop(r'<\w+(?:[^\'\">]|"(?:[^\"\\]|\\.)*"|\'(?:[^\'\\]|\\.)*\')+>')
-        if match:
-            yield self.builder.python_repr(match.group())
+    def unquoted_key(self, checked=False):
+        match = self.lexer.pop(r'\$?(?!\d)\w+', checked)
+        if not match:
+            return undefined
+        return self.builder.string(match.group())
 
-    def maybe_identifier(self):
-        match = self.lexer.pop(r'\$?(?!\d)\w+')
-        if match:
-            yield self.builder.identifier(match.group())
+    def python_repr_expression(self, checked=False):
+        match = self.lexer.pop(r'<\w+(?:[^\'\">]|"(?:[^\"\\]|\\.)*"|\'(?:[^\'\\]|\\.)*\')+>', checked)
+        if not match:
+            return undefined
+        return self.builder.python_repr(match.group())
 
-    def maybe_function_call(self):
-        match = self.lexer.pop(r'(?:new\s+)?(\w+(?:\.\w+)*)\s*\(')
-        if match:
-            yield self.builder.function_call(
-                match.group(1),
-                self._function_arguments(),
-            )
+    def identifier(self, checked=False):
+        match = self.lexer.pop(r'\$?(?!\d)\w+', checked)
+        if not match:
+            return undefined
+        return self.builder.identifier(match.group())
+
+    def function_call(self, checked=False):
+        match = self.lexer.pop(r'(?:new\s+)?(\w+(?:\.\w+)*)\s*\(', checked)
+        if not match:
+            return undefined
+        return self.builder.function_call(
+            match.group(1),
+            self._function_arguments(),
+        )
 
     def _function_arguments(self):
         re_end = r'\)'
         parsed = []
         position_key = lambda index: '_%d' % index
         while not self.lexer.peek(re_end):
-            key = next(self.maybe_identifier(), None)
-            if key:
+            key = self.identifier()
+            if key is not undefined:
                 # handle Python-style keyword args, e.g. when repr-ing a namedtuple
                 if self.lexer.pop(r'='):
                     if isinstance(parsed, list):
                         parsed = {position_key(index): value for index, value in enumerate(parsed)}
-                    value = self.expression()
+                    value = self.expression(checked=True)
                 else:
                     value = key
                     key = position_key(len(parsed))
             else:
                 key = position_key(len(parsed))
-                value = self.expression()
+                value = self.expression(checked=True)
             if isinstance(parsed, list):
                 parsed.append(value)
             else:
