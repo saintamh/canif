@@ -9,8 +9,9 @@ import sys
 from traceback import print_exc
 
 # canif
+from .builder import FloatWithoutScientificNotation, Builder
 from .lexer import Lexer
-from .parser import FloatWithoutScientificNotation, Parser
+from .parser import Parser
 
 
 if hasattr(json.encoder, 'FLOAT_REPR'): # Python 2.7
@@ -75,7 +76,8 @@ def run(options, input_bytes):
     else:
         try:
             lexer = Lexer(input_text)
-            parser = Parser(lexer)
+            builder = Builder()
+            parser = Parser(lexer, builder)
             value = parser.expression()
             lexer.pop(r'$', checked=True)
             if options.flatten:

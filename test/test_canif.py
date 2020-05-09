@@ -4,6 +4,7 @@
 from glob import glob
 from os import path
 import shlex
+from sys import stdout
 
 # 3rd parties
 import pytest
@@ -37,4 +38,5 @@ def test_canif(input_file_path):
     exit_status, actual_output_bytes = canif.run(options, input_bytes)
 
     assert exit_status == 0
+    stdout.buffer.write(actual_output_bytes)
     assert actual_output_bytes == expected_output_bytes
