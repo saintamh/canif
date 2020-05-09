@@ -1,89 +1,265 @@
 #!/usr/bin/env python3
 
+# standards
+from typing import NamedTuple
+
 # 3rd parties
 import pytest
 
 # canif
-from canif.builder import Builder
 from canif.lexer import Lexer
-from canif.parser import Parser
+from canif.parser import Parser, ParserError
 
 
-class AST(Builder):
-    """
-    A dummy builder that just builds an abstract syntax tree such that we can reconstruct how the callbacks were called
-    """
+class Node(NamedTuple):
+    kind: str
+    values: tuple
 
-    class Node:
+    def __repr__(self):
+        return 'AST.%s(%s)' % (self.kind, ', '.join(map(repr, self.values)))
 
-        def __init__(self, value):
-            self.value = value
 
-        def __eq__(self, other):
-            # NB the type comparison is important here because we want e.g. `string(42) != regex(42)`
-            return type(self) is type(other) and self.value == other.value
+class AstClass:
 
-    # We use lowercase names to save on boilerplate, else we'd need a `class Mapping` and then a `def mapping()` that just does
-    # `return Mapping()`. This keeps things concise, so forgive us, pylint: disable=invalid-name
+    def __getattr__(self, node_type):
+        return lambda *values: Node(node_type, values)
 
-    class float(Node):
-        pass
 
-    class int(Node):
-        pass
-
-    class named_constant(Node):
-        pass
-
-    class array(Node):
-        pass
-
-    class mapping(Node):
-        pass
-
-    class set(Node):
-        pass
-
-    class string(Node):
-        pass
-
-    class regex(Node):
-        def __init__(self, pattern, flags):
-            super().__init__([pattern, flags])
-
-    class python_repr(Node):
-        pass
-
-    class identifier(Node):
-        pass
-
-    class function_call(Node):
-        pass
+AST = AstClass()
 
 
 @pytest.mark.parametrize(
-    'input_text, expected_parse',
+    'input_text, expected',
     [
+
+        # Numbers
         (
             '42',
             AST.int('42'),
         ),
-        # TestCase(
-        #     input='3.14',
-        #     json_output='3.14',
-        #     echo_output='3.14',
-        #     pods_output=3.14,
-        # ),
-        # TestCase(
-        #     input='5.12e-1',
-        #     json_output='5.12e-1',
-        #     echo_output='5.12e-1',
-        #     pods_output=0.512,
-        # ),
+        (
+            '3.14',
+            AST.float('3.14'),
+        ),
+        (
+            '5.12e-1',
+            AST.float('5.12e-1'),
+        ),
+
+        # Named constants
+        (
+            'true',
+            AST.named_constant(True),
+        ),
+        (
+            'false',
+            AST.named_constant(False),
+        ),
+        (
+            'null',
+            AST.named_constant(None),
+        ),
+        (
+            'undefined',
+            AST.named_constant({'$undefined': True}),
+        ),
+        (
+            'NotImplemented',
+            AST.named_constant('NotImplemented'),
+        ),
+
+        # Arrays
+        (
+            '[1]',
+            AST.array([AST.int('1')]),
+        ),
+        (
+            '[1,]',
+            AST.array([AST.int('1')]),
+        ),
+        (
+            '[,]',
+            ParserError("Expected expression, found ',]'"),
+        ),
+        (
+            '[1,,]',
+            ParserError("Expected expression, found ',]'"),
+        ),
+        (
+            '[,1]',
+            ParserError("Expected expression, found ',1]'"),
+        ),
+        (
+            '[1, ["a"]]',
+            AST.array([AST.int('1'), AST.array([AST.string('a')])]),
+        ),
+
+        # Tuples
+        (
+            '(1,)',
+            AST.array([AST.int('1')]),
+        ),
+        (
+            '(1)',
+            ParserError("Expected /,/, found ')'"),
+        ),
+        (
+            '(,)',
+            ParserError("Expected expression, found ',)'"),
+        ),
+        (
+            '(1,,)',
+            ParserError("Expected expression, found ',)'"),
+        ),
+        (
+            '(,1)',
+            ParserError("Expected expression, found ',1)'"),
+        ),
+        (
+            '(1, ("a",))',
+            AST.array([AST.int('1'), AST.array([AST.string('a')])]),
+        ),
+
+        # Mappings
+        (
+            '{"a": 1}',
+            AST.mapping({AST.string('a'): AST.int('1')}),
+        ),
+        (
+            '{"a": 1,}',
+            AST.mapping({AST.string('a'): AST.int('1')}),
+        ),
+        (
+            '{"a": 1,,}',
+            ParserError("Expected key, found ',}'"),
+        ),
+        (
+            '{,"a": 1}',
+            ParserError('Expected key, found \',"a": 1}\''),
+        ),
+        (
+            '{a: 1}',
+            AST.mapping({AST.identifier('a'): AST.int('1')}),
+        ),
+
+        # Sets
+        (
+            '{1}',
+            AST.set([AST.int('1')]),
+        ),
+        (
+            '{1,}',
+            AST.set([AST.int('1')]),
+        ),
+        (
+            '{1,,}',
+            ParserError("Expected expression, found ',}'"),
+        ),
+        (
+            '{,1}',
+            ParserError("Expected key, found ',1}'"),
+        ),
+        (
+            '{1, 2}',
+            AST.set([AST.int('1'), AST.int('2')]),
+        ),
+
+        # Single-quoted strings
+        (
+            '''
+                'text'
+            ''',
+            AST.string('text'),
+        ),
+        (
+            r'''
+                'I "love\" this'
+            ''',
+            AST.string('I "love" this'),
+        ),
+        (
+            r'''
+                'It\'s what\'s most'
+            ''',
+            AST.string("It's what's most"),
+        ),
+        (
+            # NB input is raw string (i.e. the string includes the backslashes), output is not (so is parsed as normal Python
+            # strinig literals are)
+            r'''
+                ' \\ \" \/ \b \f \n \r \t \u0424 \x7E \' '
+            ''',
+            AST.string(' \\ " / \x08 \x0C \n \r \t Ф ~ \' '),
+        ),
+
+        # Double-quoted strings
+        (
+            '''
+                "text"
+            ''',
+            AST.string('text'),
+        ),
+        (
+            r'''
+                "I \"love\" this"
+            ''',
+            AST.string('I "love" this'),
+        ),
+        (
+            r'''
+                "It's what\'s most"
+            ''',
+            AST.string("It's what's most"),
+        ),
+        (
+            # NB input is raw string (i.e. the string includes the backslashes), output is not (so is parsed as normal Python
+            # strinig literals are)
+            r'''
+                " \\ \" \/ \b \f \n \r \t \u0424 \x7E \' "
+            ''',
+            AST.string(' \\ " / \x08 \x0C \n \r \t Ф ~ \' '),
+        ),
+
+        # Comments
+        (
+            '''
+                36 // thirty-six
+            ''',
+            AST.int('36'),
+        ),
+        (
+            '''
+               // a comment
+               "http://not.a.comment/"
+            ''',
+            AST.string('http://not.a.comment/'),
+        ),
+
+        # Python repr expressions
+        (
+            '<__main__.C object at 0x05b0ace99cf7>',
+            AST.python_repr('<__main__.C object at 0x05b0ace99cf7>'),
+        ),
+        (
+            "<re.Match object; span=(0, 1), match='a'>",
+            AST.python_repr("<re.Match object; span=(0, 1), match='a'>"),
+        ),
+        (
+            "<dummy match='<>'>",
+            AST.python_repr("<dummy match='<>'>"),
+        ),
+
     ]
 )
-def test_parser(input_text, expected_parse):
+def test_parser(input_text, expected):
     lexer = Lexer(input_text)
-    parser = Parser(lexer, AST())
-    actual_parse = parser.document()
-    assert actual_parse == expected_parse
+    parser = Parser(lexer, AstClass())
+    try:
+        actual_parse = parser.document()
+    except ParserError as actual_error:
+        if isinstance(expected, ParserError):
+            assert str(actual_error) == str(expected)
+        else:
+            raise
+    else:
+        assert actual_parse == expected

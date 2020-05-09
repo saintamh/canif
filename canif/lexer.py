@@ -3,9 +3,8 @@
 # standards
 import re
 
-
-class LexerError(ValueError):
-    pass
+# canif
+from .parser import ParserError
 
 
 class Lexer:
@@ -32,17 +31,17 @@ class Lexer:
 
     def error(self, expected):
         """
-        Raise a `LexerError`. `expected` describes the token that was expected and not found at the current position.
+        Raise a `ParserError`. `expected` describes the token that was expected and not found at the current position.
         """
         if not isinstance(expected, str):
             expected = '/%s/' % expected.pattern
-        raise ValueError('Expected %s, found %r' % (expected, self.text[self.position : self.position + 30]))
+        raise ParserError('Expected %s, found %r' % (expected, self.text[self.position : self.position + 30]))
 
     def pop(self, regex, checked=False, do_skip=True):
         """
         Match the text at the current position in the text against the given regex. Returns the regex `Match` object.
 
-        If `checked` is True, raise a `LexerError` if the regex does not match at the current position. If `checked` is False (the
+        If `checked` is True, raise a `ParserError` if the regex does not match at the current position. If `checked` is False (the
         default) and the regex does not match, return `None`.
 
         If `do_skip` is True (the default), advance past whitespace (by calling `self.skip()`) after the matching data.

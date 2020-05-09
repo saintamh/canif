@@ -4,6 +4,10 @@
 import re
 
 
+class ParserError(ValueError):
+    pass
+
+
 class Parser:
 
     named_constants = {
@@ -83,7 +87,7 @@ class Parser:
         parsed = []
         while not self.lexer.peek(re_end):
             parsed.append(self.expression())
-            if not self.lexer.pop(r','):
+            if not self.lexer.pop(r',', checked=(re_end == r'\)' and len(parsed) == 1)):
                 break
         self.lexer.pop(re_end, checked=True)
         return self.builder.array(parsed)
@@ -106,6 +110,7 @@ class Parser:
         while not self.lexer.pop(r'\}'):
             elements.append(self.expression())
             if not self.lexer.pop(r','):
+                self.lexer.pop(r'\}', checked=True)
                 break
         return self.builder.set(elements)
 
@@ -161,7 +166,9 @@ class Parser:
             'r': (r'r', lambda m: '\r'),
             't': (r't', lambda m: '\t'),
             'u': (r'u(?:[0-9a-fA-F]{4})', lambda m: chr(int(m.group()[2:], 16))),
-            'x': (r'x(?:[0-9a-fA-F]{2})', lambda m: bytes([int(m.group()[2:], 16)])),
+            'x': (r'x(?:[0-9a-fA-F]{2})', lambda m: chr(int(m.group()[2:], 16))),
+            # Not strict JSON
+            "'": (r"'", lambda m: "'"),
         }
         return re.sub(
             r'\\(?:%s)' % '|'.join(regex for regex, _ in backslash_escapes.values()),
@@ -170,7 +177,7 @@ class Parser:
         )
 
     def maybe_python_repr_expression(self):
-        match = self.lexer.pop(r'<\w+(?:\.\w+)* object at 0x[0-9a-fA-F]+>')
+        match = self.lexer.pop(r'<\w+(?:[^\'\">]|"(?:[^\"\\]|\\.)*"|\'(?:[^\'\\]|\\.)*\')+>')
         if match:
             yield self.builder.python_repr(match.group())
 
