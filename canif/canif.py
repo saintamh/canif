@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
 
-# Reads from stdin data that is either JSON, a JavaScript expression, or Python `repr` output, and spits it back out pretty-printed.
-
-#----------------------------------------------------------------------------------------------------------------------------------
-# includes
-
 # standards
 import argparse
 import json
@@ -13,43 +8,9 @@ from os import linesep
 import sys
 from traceback import print_exc
 
-#----------------------------------------------------------------------------------------------------------------------------------
+# canif
+from .lexer import Lexer
 
-class Tokenizer:
-
-    re_skipped = re.compile(r'(?:\s+|//.*)+')
-
-    def __init__(self, text):
-        self.text = text
-        self.position = 0
-        self.skip()
-
-    def skip(self):
-        match = self.re_skipped.match(self.text, self.position)
-        if match:
-            self.position = match.end()
-
-    def error(self, expected):
-        if not isinstance(expected, str):
-            expected = '/%s/' % expected.pattern
-        raise ValueError('Expected %s, found %r' % (expected, self.text[self.position : self.position + 30]))
-
-    def pop(self, regex, checked=False, do_skip=True):
-        regex = re.compile(regex)
-        match = regex.match(self.text, self.position)
-        if match:
-            self.position = match.end()
-            if do_skip:
-                self.skip()
-        elif checked:
-            self.error(regex)
-        return match
-
-    def peek(self, regex):
-        regex = re.compile(regex)
-        return regex.match(self.text, self.position)
-
-#----------------------------------------------------------------------------------------------------------------------------------
 
 class Parser:
 
@@ -71,8 +32,8 @@ class Parser:
         'OrderedDict': lambda values: dict(*values),
     }
 
-    def __init__(self, tokens):
-        self.tokens = tokens
+    def __init__(self, lexer):
+        self.lexer = lexer
 
     def _select(self, expected, *functions):
         empty = object()
@@ -80,7 +41,7 @@ class Parser:
             value = next(function(), empty)
             if value is not empty:
                 return value
-        self.tokens.error(expected)
+        self.lexer.error(expected)
 
     def expression(self):
         return self._select('expression', self.maybe_expression)
@@ -106,7 +67,7 @@ class Parser:
                 break
 
     def maybe_number(self):
-        match = self.tokens.pop(r'[\+\-]?\d+(?:\.\d+)?(?:[eE][\+\-]?\d+)?')
+        match = self.lexer.pop(r'[\+\-]?\d+(?:\.\d+)?(?:[eE][\+\-]?\d+)?')
         if match:
             text = match.group()
             if re.search(r'[\.eE]', text):
@@ -115,47 +76,47 @@ class Parser:
                 yield int(text)
 
     def maybe_constant(self):
-        match = self.tokens.pop(r'|'.join(self.constants))
+        match = self.lexer.pop(r'|'.join(self.constants))
         if match:
             yield self.constants[match.group()]
 
     def maybe_square_bracketed_array(self):
-        if self.tokens.pop(r'\['):
+        if self.lexer.pop(r'\['):
             yield self._array(r'\]')
 
     def maybe_round_bracketed_array(self):
-        if self.tokens.pop(r'\('):
+        if self.lexer.pop(r'\('):
             yield self._array(r'\)')
 
     def maybe_tuple_as_key(self):
-        if self.tokens.pop(r'\('):
+        if self.lexer.pop(r'\('):
             tuple_key = self._array(r'\)')
             yield json.dumps(list(tuple_key))
 
     def _array(self, re_end):
         parsed = []
-        while not self.tokens.peek(re_end):
+        while not self.lexer.peek(re_end):
             parsed.append(self.expression())
-            if not self.tokens.pop(r','):
+            if not self.lexer.pop(r','):
                 break
-        self.tokens.pop(re_end, checked=True)
+        self.lexer.pop(re_end, checked=True)
         return parsed
 
     def maybe_object_or_set(self):
         # I still think this is readable, pylint: disable=too-many-nested-blocks
-        if self.tokens.pop(r'\{'):
-            if self.tokens.peek(r'\}'):
+        if self.lexer.pop(r'\{'):
+            if self.lexer.peek(r'\}'):
                 # empty object
                 parsed = {}
             else:
                 missing = object()
                 value = next(self.maybe_expression(), missing)
-                if value is not missing and (self.tokens.pop(r',') or self.tokens.peek(r'\}')):
+                if value is not missing and (self.lexer.pop(r',') or self.lexer.peek(r'\}')):
                     # it's a set
                     parsed = [value]
-                    while not self.tokens.peek(r'\}'):
+                    while not self.lexer.peek(r'\}'):
                         parsed.append(self.expression())
-                        if not self.tokens.pop(r','):
+                        if not self.lexer.pop(r','):
                             break
                     parsed = {'$set': parsed}
                 else:
@@ -165,16 +126,16 @@ class Parser:
                     first_key = self.object_key() if value is missing else value
                     if isinstance(first_key, list):
                         first_key = json.dumps(first_key)
-                    self.tokens.pop(r':', checked=True)
+                    self.lexer.pop(r':', checked=True)
                     parsed[first_key] = self.expression()
-                    if self.tokens.pop(r','):
-                        while not self.tokens.peek(r'\}'):
+                    if self.lexer.pop(r','):
+                        while not self.lexer.peek(r'\}'):
                             key = self.object_key()
-                            self.tokens.pop(r':', checked=True)
+                            self.lexer.pop(r':', checked=True)
                             parsed[key] = self.expression()
-                            if not self.tokens.pop(r','):
+                            if not self.lexer.pop(r','):
                                 break
-            self.tokens.pop(r'\}', checked=True)
+            self.lexer.pop(r'\}', checked=True)
             yield parsed
 
     def object_key(self):
@@ -188,16 +149,16 @@ class Parser:
         )
 
     def maybe_single_quoted_string(self):
-        if self.tokens.pop(r"'", do_skip=False):
-            yield self.unescaped_string(self.tokens.pop(r"((?:[^\\\']|\\.)*)\'", checked=True))
+        if self.lexer.pop(r"'", do_skip=False):
+            yield self.unescaped_string(self.lexer.pop(r"((?:[^\\\']|\\.)*)\'", checked=True))
 
     def maybe_double_quoted_string(self):
-        if self.tokens.pop(r'"', do_skip=False):
-            yield self.unescaped_string(self.tokens.pop(r'((?:[^\\\"]|\\.)*)\"', checked=True))
+        if self.lexer.pop(r'"', do_skip=False):
+            yield self.unescaped_string(self.lexer.pop(r'((?:[^\\\"]|\\.)*)\"', checked=True))
 
     def maybe_regex_literal(self):
-        if self.tokens.pop(r'/', do_skip=False):
-            match = self.tokens.pop(r'((?:[^\\/]|\\.)*)/(\w*)', checked=True)
+        if self.lexer.pop(r'/', do_skip=False):
+            match = self.lexer.pop(r'((?:[^\\/]|\\.)*)/(\w*)', checked=True)
             pattern = self.unescaped_string(match)
             flags = match.group(2)
             parsed = {'$regex': pattern}
@@ -228,17 +189,17 @@ class Parser:
         return text
 
     def maybe_python_repr_expression(self):
-        match = self.tokens.pop(r'<\w+(?:\.\w+)* object at 0x[0-9a-fA-F]+>')
+        match = self.lexer.pop(r'<\w+(?:\.\w+)* object at 0x[0-9a-fA-F]+>')
         if match:
             yield match.group() # make it a string
 
     def maybe_identifier(self):
-        match = self.tokens.pop(r'\$?(?!\d)\w+')
+        match = self.lexer.pop(r'\$?(?!\d)\w+')
         if match:
             yield match.group()
 
     def maybe_function_call(self):
-        match = self.tokens.pop(r'(?:new\s+)?(\w+(?:\.\w+)*)\s*\(')
+        match = self.lexer.pop(r'(?:new\s+)?(\w+(?:\.\w+)*)\s*\(')
         if match:
             function_name = match.group(1)
             parameters = self._function_arguments()
@@ -252,11 +213,11 @@ class Parser:
         re_end = r'\)'
         parsed = []
         position_key = lambda index: '_%d' % index
-        while not self.tokens.peek(re_end):
+        while not self.lexer.peek(re_end):
             key = next(self.maybe_identifier(), None)
             if key:
                 # handle Python-style keyword args, e.g. when repr-ing a namedtuple
-                if self.tokens.pop(r'='):
+                if self.lexer.pop(r'='):
                     if isinstance(parsed, list):
                         parsed = {position_key(index): value for index, value in enumerate(parsed)}
                     value = self.expression()
@@ -270,9 +231,9 @@ class Parser:
                 parsed.append(value)
             else:
                 parsed[key] = value
-            if not self.tokens.pop(r','):
+            if not self.lexer.pop(r','):
                 break
-        self.tokens.pop(re_end, checked=True)
+        self.lexer.pop(re_end, checked=True)
         return parsed
 
 
@@ -348,10 +309,10 @@ def run(options, input_bytes):
         output_text = ''
     else:
         try:
-            tokens = Tokenizer(input_text)
-            parser = Parser(tokens)
+            lexer = Lexer(input_text)
+            parser = Parser(lexer)
             value = parser.expression()
-            tokens.pop(r'$', checked=True)
+            lexer.pop(r'$', checked=True)
             if options.flatten:
                 output_text = json.dumps(value, sort_keys=True)
             else:
@@ -377,5 +338,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-#----------------------------------------------------------------------------------------------------------------------------------
