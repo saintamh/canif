@@ -36,7 +36,7 @@ class Parser:
     def document(self):
         document = self.expression()
         self.lexer.pop(r'$', checked=True)
-        return document
+        return self.builder.document(document)
 
     def expression(self):
         return self._select('expression', self.maybe_expression)

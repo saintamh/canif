@@ -289,7 +289,8 @@ def test_parser(input_text, expected):
     mock_builder = AstClass()
     parser = Parser(lexer, mock_builder)
     try:
-        actual_parse = parser.document()
+        document = parser.document()
+        actual_parse, = document.values
     except ParserError as actual_error:
         if isinstance(expected, ParserError):
             assert str(actual_error) == str(expected)
