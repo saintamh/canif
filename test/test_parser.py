@@ -11,7 +11,7 @@ from canif.lexer import Lexer
 from canif.parser import Parser, ParserError
 
 
-class Node(NamedTuple):
+class AstNode(NamedTuple):
     kind: str
     values: tuple
 
@@ -20,9 +20,14 @@ class Node(NamedTuple):
 
 
 class AstClass:
+    """
+    Stand-in for the `Builder` class. The parser will call the various Builder methods on this (`int`, `text`, etc), we just create
+    in each call an `AstNode` that records what parameters were passed to the method. That way we can test the parser separately
+    from the Builder.
+    """
 
-    def __getattr__(self, node_type):
-        return lambda *values: Node(node_type, values)
+    def __getattr__(self, node_kind):
+        return lambda *values: AstNode(node_kind, values)
 
 
 AST = AstClass()
@@ -281,7 +286,8 @@ AST = AstClass()
 )
 def test_parser(input_text, expected):
     lexer = Lexer(input_text)
-    parser = Parser(lexer, AstClass())
+    mock_builder = AstClass()
+    parser = Parser(lexer, mock_builder)
     try:
         actual_parse = parser.document()
     except ParserError as actual_error:
