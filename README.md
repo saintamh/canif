@@ -1,7 +1,7 @@
 [![Build Status](https://travis-ci.org/saintamh/canif.svg?branch=master)](https://travis-ci.org/saintamh/canif)
 [![PyPI version](https://badge.fury.io/py/canif.svg)](https://pypi.org/project/canif/)
 
-Pretty-printer for JSON and JSON-like data.
+Parser and pretty-printer for JSON and JSON-like data.
 
 Can parse data in these formats:
 
