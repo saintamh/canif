@@ -249,6 +249,34 @@ AST = AstClass()
             AST.python_repr("<dummy match='<>'>"),
         ),
 
+        # Identifiers
+        (
+            'x',
+            AST.identifier('x'),
+        ),
+        (
+            'x10',
+            AST.identifier('x10'),
+        ),
+        (
+            'μεταφορά',
+            AST.identifier('μεταφορά'),
+        ),
+
+        # Function calls
+        (
+            'x(1)',
+            AST.function_call('x', [AST.int('1')]),
+        ),
+        (
+            'x(1,)',
+            AST.function_call('x', [AST.int('1')]),
+        ),
+        (
+            'x(1, 2)',
+            AST.function_call('x', [AST.int('1'), AST.int('2')]),
+        ),
+
     ]
 )
 def test_parser(input_text, expected):

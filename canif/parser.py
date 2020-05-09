@@ -52,6 +52,7 @@ class Parser:
             self.maybe_number,
             self.maybe_named_constant,
             self.maybe_function_call,
+            self.maybe_identifier,
             self.maybe_python_repr_expression,
         ]
         undefined = object()
@@ -190,8 +191,8 @@ class Parser:
         match = self.lexer.pop(r'(?:new\s+)?(\w+(?:\.\w+)*)\s*\(')
         if match:
             yield self.builder.function_call(
-                function_name=match.group(1),
-                arguments=self._function_arguments(),
+                match.group(1),
+                self._function_arguments(),
             )
 
     def _function_arguments(self):
