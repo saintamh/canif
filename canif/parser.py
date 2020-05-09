@@ -6,7 +6,7 @@ import re
 
 class Parser:
 
-    constants = {
+    named_constants = {
         'true': True,
         'True': True,
         'false': False,
@@ -29,6 +29,11 @@ class Parser:
                 return value
         self.lexer.error(expected)
 
+    def document(self):
+        document = self.expression()
+        self.lexer.pop(r'$', checked=True)
+        return document
+
     def expression(self):
         return self._select('expression', self.maybe_expression)
 
@@ -41,7 +46,7 @@ class Parser:
             self.maybe_double_quoted_string,
             self.maybe_regex_literal,
             self.maybe_number,
-            self.maybe_constant,
+            self.maybe_named_constant,
             self.maybe_function_call,
             self.maybe_python_repr_expression,
         ]
@@ -61,10 +66,10 @@ class Parser:
             else:
                 yield self.builder.int(text)
 
-    def maybe_constant(self):
-        match = self.lexer.pop(r'|'.join(self.constants))
+    def maybe_named_constant(self):
+        match = self.lexer.pop(r'|'.join(self.named_constants))
         if match:
-            yield self.builder.constant(self.constants[match.group()])
+            yield self.builder.named_constant(self.named_constants[match.group()])
 
     def maybe_square_bracketed_array(self):
         if self.lexer.pop(r'\['):
@@ -130,18 +135,39 @@ class Parser:
     def maybe_single_quoted_string(self):
         if self.lexer.pop(r"'", do_skip=False):
             match = self.lexer.pop(r"((?:[^\\\']|\\.)*)\'", checked=True)
-            yield self.builder.string(match.group(1))
+            yield self.builder.string(self._parse_string_escapes(match.group(1)))
 
     def maybe_double_quoted_string(self):
         if self.lexer.pop(r'"', do_skip=False):
             match = self.lexer.pop(r'((?:[^\\\"]|\\.)*)\"', checked=True)
-            yield self.builder.string(match.group(1))
+            yield self.builder.string(self._parse_string_escapes(match.group(1)))
 
     def maybe_regex_literal(self):
         if self.lexer.pop(r'/', do_skip=False):
             match = self.lexer.pop(r'((?:[^\\/]|\\.)*)/(\w*)', checked=True)
             raw_pattern, flags = match.groups()
-            yield self.builder.regex(raw_pattern, flags)
+            yield self.builder.regex(self._parse_string_escapes(raw_pattern), flags)
+
+    @staticmethod
+    def _parse_string_escapes(raw_text):
+        backslash_escapes = {
+            # Using http://json.org/ as a reference
+            '\\': (r'\\', lambda m: '\\'),
+            '"': (r'"', lambda m: '"'),
+            '/': (r'/', lambda m: '/'),
+            'b': (r'b', lambda m: '\x08'),
+            'f': (r'f', lambda m: '\x0C'),
+            'n': (r'n', lambda m: '\n'),
+            'r': (r'r', lambda m: '\r'),
+            't': (r't', lambda m: '\t'),
+            'u': (r'u(?:[0-9a-fA-F]{4})', lambda m: chr(int(m.group()[2:], 16))),
+            'x': (r'x(?:[0-9a-fA-F]{2})', lambda m: bytes([int(m.group()[2:], 16)])),
+        }
+        return re.sub(
+            r'\\(?:%s)' % '|'.join(regex for regex, _ in backslash_escapes.values()),
+            lambda m: backslash_escapes[m.group()[1]][1](m),  # you're confused, pylint: disable=unnecessary-lambda
+            raw_text,
+        )
 
     def maybe_python_repr_expression(self):
         match = self.lexer.pop(r'<\w+(?:\.\w+)* object at 0x[0-9a-fA-F]+>')

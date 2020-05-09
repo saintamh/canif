@@ -2,7 +2,6 @@
 
 # standards
 import json
-import re
 
 
 class Builder:
@@ -25,7 +24,7 @@ class Builder:
     def int(self, text):
         return int(text)
 
-    def constant(self, normalised):
+    def named_constant(self, normalised):
         return normalised
 
     def array(self, elements):
@@ -41,11 +40,10 @@ class Builder:
     def set(self, elements):
         return {'$set': elements}
 
-    def string(self, raw_text):
-        return self._unescaped_string(raw_text)
+    def string(self, text):
+        return text
 
-    def regex(self, raw_pattern, flags):
-        pattern = self._unescaped_string(raw_pattern)
+    def regex(self, pattern, flags):
         parsed = {'$regex': pattern}
         if flags:
             parsed['$options'] = flags
@@ -63,26 +61,6 @@ class Builder:
             return operator(arguments)
         else:
             return {operator: arguments}
-
-    def _unescaped_string(self, raw_text):
-        backslash_escapes = {
-            # Using http://json.org/ as a reference
-            '\\': (r'\\', lambda m: '\\'),
-            '"': (r'"', lambda m: '"'),
-            '/': (r'/', lambda m: '/'),
-            'b': (r'b', lambda m: '\x08'),
-            'f': (r'f', lambda m: '\x0C'),
-            'n': (r'n', lambda m: '\n'),
-            'r': (r'r', lambda m: '\r'),
-            't': (r't', lambda m: '\t'),
-            'u': (r'u(?:[0-9a-fA-F]{4})', lambda m: chr(int(m.group()[2:], 16))),
-            'x': (r'x(?:[0-9a-fA-F]{2})', lambda m: bytes([int(m.group()[2:], 16)])),
-        }
-        return re.sub(
-            r'\\(?:%s)' % '|'.join(regex for regex, _ in backslash_escapes.values()),
-            lambda m: backslash_escapes[m.group()[1]][1](m),  # you're confused, pylint: disable=unnecessary-lambda
-            raw_text,
-        )
 
 
 class FloatWithoutScientificNotation(float):

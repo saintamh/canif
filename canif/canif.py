@@ -78,12 +78,11 @@ def run(options, input_bytes):
             lexer = Lexer(input_text)
             builder = Builder()
             parser = Parser(lexer, builder)
-            value = parser.expression()
-            lexer.pop(r'$', checked=True)
+            document = parser.document()
             if options.flatten:
-                output_text = json.dumps(value, sort_keys=True)
+                output_text = json.dumps(document, sort_keys=True)
             else:
-                output_text = collapse_short_arrays(json.dumps(value, indent=4, sort_keys=True, ensure_ascii=False))
+                output_text = collapse_short_arrays(json.dumps(document, indent=4, sort_keys=True, ensure_ascii=False))
         except Exception:  # anything at all, pylint: disable=broad-except
             print_exc()
             output_text = input_text
