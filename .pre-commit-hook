@@ -9,7 +9,7 @@ if [ -f .env-for-git-hooks ]; then
     . .env-for-git-hooks
 fi
 
-git diff --cached --relative --name-only --diff-filter=ACM \
+git diff --cached --relative --name-only --diff-filter=ACMR \
     | grep '.py$' \
     | xargs --no-run-if-empty \
             pylint \
