@@ -76,7 +76,7 @@ def main():
     input_bytes = sys.stdin.buffer.read()
     exit_status, output_bytes = run(options, input_bytes)
     if output_bytes:
-        sys.stdin.buffer.write(output_bytes)
+        sys.stdout.buffer.write(output_bytes)
     sys.exit(exit_status)
 
 
