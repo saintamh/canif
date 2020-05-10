@@ -4,24 +4,19 @@
 from glob import glob
 from os import path
 import shlex
-from sys import stdout
+from subprocess import check_output
 
 # 3rd parties
 import pytest
-
-# canif
-import canif
 
 
 @pytest.mark.parametrize(
     'input_file_path', glob(path.join(path.dirname(__file__), 'fixtures', '*.in'))
 )
-def test_canif(input_file_path):
+def test_command_line_tool(input_file_path):
     output_file_path = input_file_path.replace('.in', '.out')
     argv_file_path = input_file_path.replace('.in', '.argv')
 
-    with open(input_file_path, 'rb') as file_in:
-        input_bytes = file_in.read()
     with open(output_file_path, 'rb') as file_in:
         expected_output_bytes = file_in.read()
     if path.exists(argv_file_path):
@@ -30,13 +25,10 @@ def test_canif(input_file_path):
     else:
         argv = ['canif']
 
-    options = canif.parse_command_line(
-        argv,
-        default_input_encoding='UTF-8',
-        default_output_encoding='UTF-8',
-    )
-    exit_status, actual_output_bytes = canif.run(options, input_bytes)
+    with open(input_file_path, 'rb') as file_in:
+        actual_output_bytes = check_output(
+            argv,
+            stdin=file_in,
+        )
 
-    assert exit_status == 0
-    stdout.buffer.write(actual_output_bytes)
     assert actual_output_bytes == expected_output_bytes
