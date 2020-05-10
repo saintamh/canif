@@ -217,6 +217,25 @@ ALL_TEST_CASES = [
         expected_json='{"a": 1}',
     ),
 
+    # Mappings with tuples as keys
+    Case(
+        '{(1, 2): 3}',
+        expected_parse=AST.mapping({AST.tuple((AST.int('1'), AST.int('2'))): AST.int('3')}),
+        expected_pods={(1, 2): 3},
+        expected_json='{"$tuple[1, 2]": 3}',
+    ),
+    Case(
+        '{(1, (2, "3")): 4}',
+        expected_parse=AST.mapping({
+            AST.tuple((
+                AST.int('1'),
+                AST.tuple((AST.int('2'), AST.string('3'))),
+            )): AST.int('4'),
+        }),
+        expected_pods={(1, (2, '3')): 4},
+        expected_json=r'{"$tuple[1, [2, \"3\"]]": 4}',
+    ),
+
     # Sets
     Case(
         '{1}',

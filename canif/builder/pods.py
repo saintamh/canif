@@ -1,8 +1,5 @@
 #!/usr/bin/env python3
 
-# standards
-import json
-
 # canif
 from .base import Builder
 
@@ -54,10 +51,6 @@ class PodsBuilder(Builder):
         return elements
 
     def mapping(self, items):
-        for key in list(items.keys()):
-            if isinstance(key, list):
-                # Python tuples as keys
-                key = json.dumps(key)
         return items
 
     def set(self, elements):

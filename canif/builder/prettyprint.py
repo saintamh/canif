@@ -60,6 +60,14 @@ class PrettyPrintBuilder(PodsBuilder):
     def set(self, elements):
         return {'$set': elements}
 
+    def mapping(self, items):
+        for key in list(items.keys()):
+            if isinstance(key, tuple):
+                # Python tuples as keys
+                new_key = '$tuple' + json.dumps(key)
+                items[new_key] = items.pop(key)
+        return items
+
     @staticmethod
     def collapse_short_arrays(json_str):
         def collapse(text):
