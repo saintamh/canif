@@ -63,6 +63,12 @@ ALL_TEST_CASES = [
         expected_pods=0.512,
         expected_json='0.512',
     ),
+    Case(
+        '5.12e-17',
+        expected_parse=AST.float('5.12e-17'),
+        expected_pods=5.12e-17,
+        expected_json='5.12e-17',
+    ),
 
     # Named constants
     Case(
