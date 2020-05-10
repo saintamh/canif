@@ -77,21 +77,21 @@ class Parser:
     def square_bracketed_array(self, checked=False):
         if not self.lexer.pop(r'\[', checked):
             return undefined
-        return self._array(r'\]')
+        return self.builder.array(self._array_elements(r'\]'))
 
     def round_bracketed_array(self, checked=False):
         if not self.lexer.pop(r'\(', checked):
             return undefined
-        return self._array(r'\)')
+        return self.builder.tuple(tuple(self._array_elements(r'\)')))
 
-    def _array(self, re_end):
-        parsed = []
+    def _array_elements(self, re_end):
+        elements = []
         while not self.lexer.peek(re_end):
-            parsed.append(self.expression(checked=True))
-            if not self.lexer.pop(r',', checked=(re_end == r'\)' and len(parsed) == 1)):
+            elements.append(self.expression(checked=True))
+            if not self.lexer.pop(r',', checked=(re_end == r'\)' and len(elements) == 1)):
                 break
         self.lexer.pop(re_end, checked=True)
-        return self.builder.array(parsed)
+        return elements
 
     def mapping_or_set(self, checked=False):
         if not self.lexer.pop(r'\{', checked):

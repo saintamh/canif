@@ -27,6 +27,9 @@ class Builder:
     def array(self, elements):
         raise NotImplementedError
 
+    def tuple(self, elements):
+        raise NotImplementedError
+
     def mapping(self, items):
         raise NotImplementedError
 

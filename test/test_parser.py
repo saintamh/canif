@@ -155,8 +155,8 @@ ALL_TEST_CASES = [
     # Tuples
     Case(
         '(1,)',
-        expected_parse=AST.array([AST.int('1')]),
-        expected_pods=[1],
+        expected_parse=AST.tuple((AST.int('1'),)),
+        expected_pods=(1,),
         expected_json='[1]',
     ),
     Case(
@@ -178,8 +178,8 @@ ALL_TEST_CASES = [
     ),
     Case(
         '(1, ("a",))',
-        expected_parse=AST.array([AST.int('1'), AST.array([AST.string('a')])]),
-        expected_pods=[1, ['a']],
+        expected_parse=AST.tuple((AST.int('1'), AST.tuple((AST.string('a'),)))),
+        expected_pods=(1, ('a',)),
         expected_json='[1, ["a"]]',
     ),
 
@@ -403,8 +403,8 @@ ALL_TEST_CASES = [
             'OrderedDict',
             [
                 AST.array([
-                    AST.array([AST.string('a'), AST.int('1')]),
-                    AST.array([AST.string('b'), AST.int('2')]),
+                    AST.tuple((AST.string('a'), AST.int('1'))),
+                    AST.tuple((AST.string('b'), AST.int('2'))),
                 ]),
             ],
         ),

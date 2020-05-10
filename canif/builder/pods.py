@@ -50,6 +50,9 @@ class PodsBuilder(Builder):
     def array(self, elements):
         return elements
 
+    def tuple(self, elements):
+        return elements
+
     def mapping(self, items):
         for key in list(items.keys()):
             if isinstance(key, list):
