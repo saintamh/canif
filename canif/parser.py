@@ -142,20 +142,30 @@ class Parser:
         if not self.lexer.pop(r"'", checked, do_skip=False):
             return undefined
         match = self.lexer.pop(r"((?:[^\\\']|\\.)*)\'", checked=True)
-        return self.builder.string(self._parse_string_escapes(match.group(1)))
+        return self.builder.string(
+            "'" + match.group(),
+            self._parse_string_escapes(match.group(1)),
+        )
 
     def double_quoted_string(self, checked=False):
         if not self.lexer.pop(r'"', checked, do_skip=False):
             return undefined
         match = self.lexer.pop(r'((?:[^\\\"]|\\.)*)\"', checked=True)
-        return self.builder.string(self._parse_string_escapes(match.group(1)))
+        return self.builder.string(
+            '"' + match.group(),
+            self._parse_string_escapes(match.group(1)),
+        )
 
     def regex_literal(self, checked=False):
         if not self.lexer.pop(r'/', checked, do_skip=False):
             return undefined
         match = self.lexer.pop(r'((?:[^\\/]|\\.)*)/(\w*)', checked=True)
         raw_pattern, flags = match.groups()
-        return self.builder.regex(self._parse_string_escapes(raw_pattern), flags)
+        return self.builder.regex(
+            '/' + match.group(),
+            self._parse_string_escapes(raw_pattern),
+            flags,
+        )
 
     @staticmethod
     def _parse_string_escapes(raw_text):
@@ -184,7 +194,7 @@ class Parser:
         match = self.lexer.pop(r'\$?(?!\d)\w+', checked)
         if not match:
             return undefined
-        return self.builder.string(match.group())
+        return self.builder.string(match.group(), match.group())
 
     def python_repr_expression(self, checked=False):
         match = self.lexer.pop(r'<\w+(?:[^\'\">]|"(?:[^\"\\]|\\.)*"|\'(?:[^\'\\]|\\.)*\')+>', checked)

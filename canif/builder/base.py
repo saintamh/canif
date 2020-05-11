@@ -21,13 +21,13 @@ class Builder:
     def named_constant(self, text):
         raise NotImplementedError
 
-    def string(self, text):
+    def string(self, raw, text):
         raise NotImplementedError
 
-    def regex(self, pattern, flags):
+    def regex(self, raw, pattern, flags):
         raise NotImplementedError
 
-    def python_repr(self, raw_text):
+    def python_repr(self, raw):
         raise NotImplementedError
 
     def identifier(self, name):

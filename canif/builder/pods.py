@@ -112,17 +112,17 @@ class PodsBuilder(Builder):
     def named_constant(self, text):
         return self.named_constants[text]
 
-    def string(self, text):
+    def string(self, _raw_unused, text):
         return text
 
-    def regex(self, pattern, flags):
+    def regex(self, _raw_unused, pattern, flags):
         parsed = {'$regex': pattern}
         if flags:
             parsed['$options'] = flags
         return parsed
 
-    def python_repr(self, raw_text):
-        return '$repr%s' % raw_text
+    def python_repr(self, raw):
+        return '$repr%s' % raw
 
     def identifier(self, name):
         return '$$%s' % name
