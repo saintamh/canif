@@ -336,6 +336,20 @@ ALL_TEST_CASES = [
         expected_json=r'''" \\ \" / \b \f \n \r \t Ф ~ ' "''',
     ),
 
+    # Regex literals
+    Case(
+        '/ab+a/',
+        expected_parse=AST.regex('ab+a'),
+        expected_pods={'$regex': 'ab+a'},
+        expected_json='{"$regex": "ab+a"}',
+    ),
+    Case(
+        r'/\[\w+\]\./',
+        expected_parse=AST.regex(r'\[\w+\]\.'),
+        expected_pods={'$regex': r'\[\w+\]\.'},
+        expected_json='{"$regex": "\\[\\w+\\]\\."}',
+    ),
+
     # Comments
     Case(
         '''
