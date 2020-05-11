@@ -12,9 +12,6 @@ class Builder:
     whatever representation of the AST it needs.
     """
 
-    def document(self, expression):
-        raise NotImplementedError
-
     def float(self, text):
         raise NotImplementedError
 
@@ -22,18 +19,6 @@ class Builder:
         raise NotImplementedError
 
     def named_constant(self, text):
-        raise NotImplementedError
-
-    def array(self, elements):
-        raise NotImplementedError
-
-    def tuple(self, elements):
-        raise NotImplementedError
-
-    def mapping(self, items):
-        raise NotImplementedError
-
-    def set(self, elements):
         raise NotImplementedError
 
     def string(self, text):
@@ -48,5 +33,20 @@ class Builder:
     def identifier(self, name):
         raise NotImplementedError
 
-    def function_call(self, function_name, arguments):
+    def document(self):
+        raise NotImplementedError
+
+    def array(self):
+        raise NotImplementedError
+
+    def tuple(self):
+        raise NotImplementedError
+
+    def set(self):
+        raise NotImplementedError
+
+    def mapping(self):
+        raise NotImplementedError
+
+    def function_call(self, function_name):
         raise NotImplementedError
