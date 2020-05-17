@@ -12,9 +12,6 @@ class Builder:
     whatever representation of the AST it needs.
     """
 
-    def document(self, expression):
-        raise NotImplementedError
-
     def float(self, raw, value):
         raise NotImplementedError
 
@@ -24,7 +21,7 @@ class Builder:
     def named_constant(self, raw, value):
         raise NotImplementedError
 
-    def string(self, raw, text):
+    def string(self, raw, value):
         raise NotImplementedError
 
     def regex(self, raw, pattern, flags):
@@ -36,17 +33,41 @@ class Builder:
     def identifier(self, name):
         raise NotImplementedError
 
-    def array(self, elements):
+    def open_document(self):
         raise NotImplementedError
 
-    def tuple(self, elements):
+    def close_document(self):
         raise NotImplementedError
 
-    def mapping(self, items):
+    def open_array(self, kind):
         raise NotImplementedError
 
-    def set(self, elements):
+    def array_element(self):
         raise NotImplementedError
 
-    def function_call(self, function_name, arguments):
+    def close_array(self):
+        raise NotImplementedError
+
+    def open_mapping_or_set(self):
+        raise NotImplementedError
+
+    def mapping_key(self):
+        raise NotImplementedError
+
+    def mapping_value(self):
+        raise NotImplementedError
+
+    def close_mapping(self):
+        raise NotImplementedError
+
+    def close_set(self):
+        raise NotImplementedError
+
+    def open_function_call(self):
+        raise NotImplementedError
+
+    def function_argument(self):
+        raise NotImplementedError
+
+    def close_function_call(self):
         raise NotImplementedError

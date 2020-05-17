@@ -1,14 +1,12 @@
 #!/usr/bin/env python3
 
 # standards
+from itertools import count
 import re
 
 
 class ParserError(ValueError):
     pass
-
-
-undefined = object()
 
 
 class Parser:
@@ -30,17 +28,18 @@ class Parser:
 
     def _one_of(self, *functions, expected=None):
         for function in functions:
-            value = function()
-            if value is not undefined:
-                return value
+            found = function()
+            if found:
+                return True
         if expected:
             self.lexer.error(expected)
-        return undefined
+        return False
 
     def document(self):
-        document = self.expression(checked=True)
+        self.builder.open_document()
+        self.expression(checked=True)
         self.lexer.pop(r'$', checked=True)
-        return self.builder.document(document)
+        return self.builder.close_document()
 
     def expression(self, checked=False):
         return self._one_of(
@@ -58,43 +57,47 @@ class Parser:
             expected=('expression' if checked else None),
         )
 
-    def number(self, checked=False):
-        match = self.lexer.pop(r'[\+\-]?\d+(?:\.\d+)?(?:[eE][\+\-]?\d+)?', checked)
-        if not match:
-            return undefined
-        text = match.group()
-        if re.search(r'[\.eE]', text):
-            return self.builder.float(text, float(text))
-        else:
-            return self.builder.int(text, int(text))
+    def number(self):
+        match = self.lexer.pop(r'[\+\-]?\d+(?:\.\d+)?(?:[eE][\+\-]?\d+)?')
+        if match:
+            text = match.group()
+            if re.search(r'[\.eE]', text):
+                self.builder.float(text, float(text))
+            else:
+                self.builder.int(text, int(text))
+            return True
 
-    def named_constant(self, checked=False):
-        match = self.lexer.pop(r'|'.join(self.named_constants), checked)
-        if not match:
-            return undefined
-        raw = match.group()
-        return self.builder.named_constant(raw, self.named_constants[raw])
+    def named_constant(self):
+        match = self.lexer.pop(r'|'.join(self.named_constants))
+        if match:
+            raw = match.group()
+            self.builder.named_constant(raw, self.named_constants[raw])
+            return True
 
-    def single_quoted_string(self, checked=False):
-        if not self.lexer.pop(r"'", checked, do_skip=False):
-            return undefined
-        match = self.lexer.pop(r"((?:[^\\\']|\\.)*)\'", checked=True)
-        raw = match.group(1)
-        return self.builder.string(raw, self._parse_string_escapes(raw))
+    def single_quoted_string(self):
+        if self.lexer.peek(r"'"):
+            match = self.lexer.pop(r"\'((?:[^\\\']|\\.)*)\'", checked=True)
+            raw = match.group()
+            value = self._parse_string_escapes(match.group(1))
+            self.builder.string(raw, value)
+            return True
 
-    def double_quoted_string(self, checked=False):
-        if not self.lexer.pop(r'"', checked, do_skip=False):
-            return undefined
-        match = self.lexer.pop(r'((?:[^\\\"]|\\.)*)\"', checked=True)
-        raw = match.group(1)
-        return self.builder.string(raw, self._parse_string_escapes(raw))
+    def double_quoted_string(self):
+        if self.lexer.peek(r'"'):
+            match = self.lexer.pop(r'\"((?:[^\\\"]|\\.)*)\"', checked=True)
+            raw = match.group()
+            value = self._parse_string_escapes(match.group(1))
+            self.builder.string(raw, value)
+            return True
 
-    def regex_literal(self, checked=False):
-        if not self.lexer.pop(r'/', checked, do_skip=False):
-            return undefined
-        match = self.lexer.pop(r'((?:[^\\/]|\\.)*)/(\w*)', checked=True)
-        raw, flags = match.groups()
-        return self.builder.regex(raw, self._parse_string_escapes(raw), flags)
+    def regex_literal(self):
+        if self.lexer.peek(r'/'):
+            match = self.lexer.pop(r'/((?:[^\\/]|\\.)*)/(\w*)', checked=True)
+            raw = match.group()
+            raw_pattern, flags = match.groups()
+            value = self._parse_string_escapes(raw_pattern)
+            self.builder.regex(raw, value, flags)
+            return True
 
     @staticmethod
     def _parse_string_escapes(raw_text):
@@ -119,81 +122,93 @@ class Parser:
             raw_text,
         )
 
-    def unquoted_key(self, checked=False):
-        match = self.lexer.pop(r'\$?(?!\d)\w+', checked)
-        if not match:
-            return undefined
-        raw = match.group()
-        return self.builder.string(raw, raw)
+    def unquoted_key(self):
+        match = self.lexer.pop(r'\$?(?!\d)\w+')
+        if match:
+            raw = match.group()
+            self.builder.string(raw, raw)
+            return True
 
-    def python_repr_expression(self, checked=False):
-        match = self.lexer.pop(r'<\w+(?:[^\'\">]|"(?:[^\"\\]|\\.)*"|\'(?:[^\'\\]|\\.)*\')+>', checked)
-        if not match:
-            return undefined
-        return self.builder.python_repr(match.group())
+    def python_repr_expression(self):
+        match = self.lexer.pop(r'<\w+(?:[^\'\">]|"(?:[^\"\\]|\\.)*"|\'(?:[^\'\\]|\\.)*\')+>')
+        if match:
+            self.builder.python_repr(match.group())
+            return True
 
-    def identifier(self, checked=False):
-        match = self.lexer.pop(r'\$?(?!\d)\w+', checked)
-        if not match:
-            return undefined
-        return self.builder.identifier(match.group())
+    def identifier(self):
+        match = self.lexer.pop(r'\$?(?!\d)\w+')
+        if match:
+            self.builder.identifier(match.group())
+            return True
 
-    def square_bracketed_array(self, checked=False):
-        if not self.lexer.pop(r'\[', checked):
-            return undefined
-        return self.builder.array(self._array_elements(r'\]'))
+    def square_bracketed_array(self):
+        if self.lexer.pop(r'\['):
+            self.builder.open_array(list)
+            self._comma_separated_list(r'\]', self.builder.array_element)
+            self.builder.close_array()
+            return True
 
-    def round_bracketed_array(self, checked=False):
-        if not self.lexer.pop(r'\(', checked):
-            return undefined
-        return self.builder.tuple(tuple(self._array_elements(r'\)')))
+    def round_bracketed_array(self):
+        if self.lexer.pop(r'\('):
+            self.builder.open_array(tuple)
+            self._comma_separated_list(r'\)', self.builder.array_element, needs_at_least_one_comma=True)
+            self.builder.close_array()
+            return True
 
-    def _array_elements(self, re_end):
-        elements = []
+    def _comma_separated_list(self, re_end, builder_callback, needs_at_least_one_comma=False):
+        num_elements = count(1)
         while not self.lexer.peek(re_end):
-            elements.append(self.expression(checked=True))
-            if not self.lexer.pop(r',', checked=(re_end == r'\)' and len(elements) == 1)):
+            self.expression(checked=True)
+            builder_callback()
+            if not self.lexer.pop(r',', checked=(needs_at_least_one_comma and next(num_elements) == 1)):
                 break
         self.lexer.pop(re_end, checked=True)
-        return elements
 
     def mapping_or_set(self, checked=False):
-        if not self.lexer.pop(r'\{', checked):
-            return undefined
-        if self.lexer.pop(r'\}'):
-            return self.builder.mapping({})
-        else:
-            value = self._one_of(
-                self.mapping_key,
-                self.expression,
-            )
-            if value is not undefined and (self.lexer.pop(r',') or self.lexer.peek(r'\}')):
-                return self._set(value)
+        if self.lexer.pop(r'\{', checked):
+            self.builder.open_mapping_or_set()
+            if self.lexer.pop(r'\}'):
+                # empty mapping
+                self.builder.close_mapping()
             else:
-                first_key = self.mapping_key(checked=True) if value is undefined else value
-                return self._mapping(first_key)
+                have_possible_set_element = self._one_of(
+                    self.mapping_key,
+                    self.expression,
+                )
+                if have_possible_set_element and (self.lexer.pop(r',') or self.lexer.peek(r'\}')):
+                    self._continue_as_set()
+                else:
+                    self._continue_as_mapping(have_possible_set_element)
+            return True
 
-    def _set(self, first_value):
-        elements = [first_value]
-        while not self.lexer.pop(r'\}'):
-            elements.append(self.expression(checked=True))
-            if not self.lexer.pop(r','):
-                self.lexer.pop(r'\}', checked=True)
-                break
-        return self.builder.set(elements)
+    def _continue_as_set(self):
+        self.builder.set_element()
+        self._comma_separated_list(
+            r'\}',
+            builder_callback=self.builder.set_element,
+        )
+        self.builder.close_set()
 
-    def _mapping(self, first_key):
+    def _continue_as_mapping(self, first_key_already_parsed):
+        if not first_key_already_parsed:
+            self.mapping_key(checked=True)
         self.lexer.pop(r':', checked=True)
-        items = {first_key: self.expression(checked=True)}
-        if self.lexer.pop(r','):
+        self.builder.mapping_key()
+        self.expression(checked=True)
+        have_comma = self.lexer.pop(r',')
+        self.builder.mapping_value()
+        if have_comma:
             while not self.lexer.peek(r'\}'):
-                key = self.mapping_key(checked=True)
+                self.mapping_key(checked=True)
                 self.lexer.pop(r':', checked=True)
-                items[key] = self.expression(checked=True)
-                if not self.lexer.pop(r','):
+                self.builder.mapping_key()
+                self.expression(checked=True)
+                have_comma = self.lexer.pop(r',')
+                self.builder.mapping_value()
+                if not have_comma:
                     break
         self.lexer.pop(r'\}', checked=True)
-        return self.builder.mapping(items)
+        self.builder.close_mapping()
 
     def mapping_key(self, checked=False):
         return self._one_of(
@@ -205,37 +220,14 @@ class Parser:
             expected=('key' if checked else None),
         )
 
-    def function_call(self, checked=False):
-        match = self.lexer.pop(r'(?:new\s+)?(\w+(?:\.\w+)*)\s*\(', checked)
-        if not match:
-            return undefined
-        function_name = match.group(1)
-        arguments = self._function_arguments()
-        return self.builder.function_call(function_name, arguments)
-
-    def _function_arguments(self):
-        re_end = r'\)'
-        parsed = []
-        position_key = lambda index: '_%d' % index
-        while not self.lexer.peek(re_end):
-            key = self.identifier()
-            if key is not undefined:
-                # handle Python-style keyword args, e.g. when repr-ing a namedtuple
-                if self.lexer.pop(r'='):
-                    if isinstance(parsed, list):
-                        parsed = {position_key(index): value for index, value in enumerate(parsed)}
-                    value = self.expression(checked=True)
-                else:
-                    value = key
-                    key = position_key(len(parsed))
-            else:
-                key = position_key(len(parsed))
-                value = self.expression(checked=True)
-            if isinstance(parsed, list):
-                parsed.append(value)
-            else:
-                parsed[key] = value
-            if not self.lexer.pop(r','):
-                break
-        self.lexer.pop(re_end, checked=True)
-        return parsed
+    def function_call(self):
+        match = self.lexer.pop(r'((?:new\s+)?\w+(?:\.\w+)*)\s*\(')
+        if match:
+            self.builder.identifier(match.group(1))
+            self.builder.open_function_call()
+            self._comma_separated_list(
+                r'\)',
+                builder_callback=self.builder.function_argument,
+            )
+            self.builder.close_function_call()
+            return True

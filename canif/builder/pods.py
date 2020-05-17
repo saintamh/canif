@@ -4,12 +4,48 @@
 from .base import Builder
 
 
-class PodsBuilder(Builder):
-    """
-    A builder that assembles a Plain Old Data Structure (lists, dicts, strings) with the parsed data
-    """
+undefined = object()
 
-    special_function_calls = {
+
+class Collection:
+
+    def __init__(self, kind):
+        self.kind = kind
+        self.elements = []
+
+    def append(self, element):
+        self.elements.append(element)
+
+    def build(self):
+        return self.kind(self.elements)
+
+
+class Mapping:
+
+    def __init__(self):
+        self.items = {}
+        self.key = undefined
+
+    def add_key(self, key):
+        assert self.key is undefined, repr(self.key)
+        self.key = key
+
+    def add_value(self, value):
+        assert self.key is not undefined
+        self.items[self.key] = value
+        self.key = undefined
+
+    def build(self):
+        assert self.key is undefined, repr(self.key)
+        return self.items
+
+
+MAPPING_OR_SET = object()
+
+
+class FunctionCall:
+
+    special = {
         # https://docs.mongodb.com/manual/reference/mongodb-extended-json/
         #
         # For both $date and $oid there should be a single argument, but don't silently swallow the rest of there are more
@@ -19,49 +55,132 @@ class PodsBuilder(Builder):
         'OrderedDict': lambda values: dict(*values),
     }
 
-    def document(self, expression):
-        return expression
+    def __init__(self, function_name):
+        self.function_name = function_name
+        self.arguments = []
+
+    def append_argument(self, argument):
+        self.arguments.append(argument)
+
+    def build(self):
+        operator = self.special.get(self.function_name[2:])
+        if operator:
+            return operator(self.arguments)
+        else:
+            return {self.function_name: self.arguments}
+
+
+class PodsBuilder(Builder):
+    """
+    A builder that assembles a Plain Old Data Structure (lists, dicts, strings) with the parsed data
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.stack = NotImplemented
 
     def float(self, raw, value):
-        return value
+        self.stack.append(value)
 
     def int(self, raw, value):
-        return value
+        self.stack.append(value)
 
     def named_constant(self, raw, value):
-        return value
+        self.stack.append(value)
 
-    def string(self, raw, text):
-        return text
+    def string(self, raw, value):
+        self.stack.append(value)
 
     def regex(self, raw, pattern, flags):
         parsed = {'$regex': pattern}
         if flags:
             parsed['$options'] = flags
-        return parsed
+        self.stack.append(parsed)
 
     def python_repr(self, raw):
-        return '$repr%s' % raw
+        self.stack.append('$repr%s' % raw)
 
     def identifier(self, name):
-        return '$$%s' % name
+        self.stack.append('$$%s' % name)
 
-    def array(self, elements):
-        return elements
+    def open_document(self):
+        assert self.stack is NotImplemented, repr(self.stack)
+        self.stack = []
 
-    def tuple(self, elements):
-        return elements
+    def close_document(self):
+        assert len(self.stack) == 1, self.stack
+        value = self.stack.pop()
+        self.stack = NotImplemented
+        return value
 
-    def mapping(self, items):
-        return items
+    def open_array(self, kind):
+        self.stack.append(Collection(kind))
 
-    def set(self, elements):
-        return set(elements)
+    def array_element(self):
+        element = self.stack.pop()
+        collection = self.stack[-1]
+        collection.append(element)
 
-    def function_call(self, function_name, arguments):
-        operator = self.special_function_calls.get(function_name)
-        if operator:
-            parsed = operator(arguments)
-        else:
-            parsed = {'$$%s' % function_name: arguments}
-        return parsed
+    def close_array(self):
+        collection = self.stack.pop()
+        value = collection.build()
+        self.stack.append(value)
+
+    def open_mapping_or_set(self):
+        self.stack.append(MAPPING_OR_SET)
+
+    def _mapping_from_stack(self):
+        mapping = self.stack[-1]
+        if mapping is MAPPING_OR_SET:
+            mapping = Mapping()
+            self.stack.pop()
+            self.stack.append(mapping)
+        return mapping
+
+    def mapping_key(self):
+        key = self.stack.pop()
+        mapping = self._mapping_from_stack()
+        mapping.add_key(key)
+
+    def mapping_value(self):
+        value = self.stack.pop()
+        mapping = self.stack[-1]
+        mapping.add_value(value)
+
+    def close_mapping(self):
+        mapping = self._mapping_from_stack()
+        self.stack.pop()
+        value = mapping.build()
+        self.stack.append(value)
+
+    def _set_from_stack(self):
+        collection = self.stack[-1]
+        if collection is MAPPING_OR_SET:
+            collection = Collection(set)
+            self.stack.pop()
+            self.stack.append(collection)
+        return collection
+
+    def set_element(self):
+        element = self.stack.pop()
+        collection = self._set_from_stack()
+        collection.append(element)
+
+    def close_set(self):
+        self._set_from_stack()
+        self.close_array()
+
+    def open_function_call(self):
+        function_name = self.stack.pop()
+        function_call = FunctionCall(function_name)
+        self.stack.append(function_call)
+
+    def function_argument(self):
+        argument = self.stack.pop()
+        function_call = self.stack[-1]
+        function_call.append_argument(argument)
+
+    def close_function_call(self):
+        function_call = self.stack.pop()
+        value = function_call.build()
+        self.stack.append(value)
