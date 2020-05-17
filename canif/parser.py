@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 # standards
+from itertools import count
 import re
 
 
@@ -14,23 +15,23 @@ undefined = object()
 class Parser:
 
     named_constants = {
-        'true',
-        'True',
-        'false',
-        'False',
-        'null',
-        'None',
-        'undefined',
-        'NotImplemented',
+        'true': True,
+        'True': True,
+        'false': False,
+        'False': False,
+        'null': None,
+        'None': None,
+        'undefined': '$undefined',
+        'NotImplemented': NotImplemented,
     }
 
     def __init__(self, lexer, builder):
         self.lexer = lexer
         self.builder = builder
 
-    def _one_of(self, *functions, expected=None):
+    def _one_of(self, parent, *functions, expected=None):
         for function in functions:
-            value = function()
+            value = function(parent)
             if value is not undefined:
                 return value
         if expected:
@@ -38,13 +39,14 @@ class Parser:
         return undefined
 
     def document(self):
-        document = self.builder.document()
-        document.append(self.expression(checked=True))
+        document = self.builder.open_document()
+        expression = self.expression(document, checked=True)
         self.lexer.pop(r'$', checked=True)
-        return document.close()
+        return self.builder.close_document(document)
 
-    def expression(self, checked=False):
+    def expression(self, parent, checked=False):
         return self._one_of(
+            parent,
             self.square_bracketed_array,
             self.round_bracketed_array,
             self.mapping_or_set,
@@ -59,74 +61,84 @@ class Parser:
             expected=('expression' if checked else None),
         )
 
-    def number(self, checked=False):
+    def number(self, parent, checked=False):
         match = self.lexer.pop(r'[\+\-]?\d+(?:\.\d+)?(?:[eE][\+\-]?\d+)?', checked)
-        if match:
-            text = match.group()
-            if re.search(r'[\.eE]', text):
-                return self.builder.float(text)
-            else:
-                return self.builder.int(text)
-        return undefined
+        if not match:
+            return undefined
+        text = match.group()
+        if re.search(r'[\.eE]', text):
+            return self.builder.float(parent, text, float(text))
+        else:
+            return self.builder.int(parent, text, int(text))
 
-    def named_constant(self, checked=False):
+    def named_constant(self, parent, checked=False):
         match = self.lexer.pop(r'|'.join(self.named_constants), checked)
         if not match:
             return undefined
-        return self.builder.named_constant(match.group())
+        return self.builder.named_constant(
+            parent,
+            match.group(),
+            self.named_constant[match.group()],
+        )
 
-    def square_bracketed_array(self, checked=False):
+    def square_bracketed_array(self, parent, checked=False):
         if not self.lexer.pop(r'\[', checked):
             return undefined
-        return self._comma_separated_list(r'\]', self.builder.array())
+        array = self.open_array(parent, list)
+        return self._comma_separated_list(r'\]', array)
 
-    def round_bracketed_array(self, checked=False):
+    def round_bracketed_array(self, parent, checked=False):
         if not self.lexer.pop(r'\(', checked):
             return undefined
-        return self._comma_separated_list(r'\)', self.builder.tuple(), needs_at_least_one_comma=True)
+        array = self.open_array(parent, tuple)
+        return self._comma_separated_list(r'\)', array, needs_at_least_one_comma=True)
 
-    def _comma_separated_list(self, re_end, collection, needs_at_least_one_comma=False):
+    def _comma_separated_list(self, re_end, array, needs_at_least_one_comma=False):
+        num_elements = count(1)
         while not self.lexer.peek(re_end):
-            collection.append(self.expression(checked=True))
-            if not self.lexer.pop(r',', checked=(needs_at_least_one_comma and len(collection) == 1)):
+            element = self.expression(array, checked=True)
+            self.builder.array_element(array, element)
+            if not self.lexer.pop(r',', checked=(needs_at_least_one_comma and next(num_elements) == 1)):
                 break
         self.lexer.pop(re_end, checked=True)
-        return collection.close()
+        return self.builder.close_array(array)
 
-    def mapping_or_set(self, checked=False):
+    def mapping_or_set(self, parent, checked=False):
         if not self.lexer.pop(r'\{', checked):
             return undefined
         if self.lexer.pop(r'\}'):
             # it's an empty mapping
-            return self.builder.mapping().close()
+            mapping = self.builder.open_mapping(parent)
+            return self.builder.close_mapping(mapping)
         else:
             value = self._one_of(
+                parent,
                 self.mapping_key,
                 self.expression,
             )
             if value is not undefined and (self.lexer.pop(r',') or self.lexer.peek(r'\}')):
                 # it's a set
-                collection = self.builder.set()
-                collection.append(value)
-                return self._comma_separated_list(r'\}', collection)
+                array = self.builder.open_array(parent, set)
+                self.builder.array_element(array, value)
+                return self._comma_separated_list(r'\}', array)
             else:
                 # it's a mapping
                 mapping = self.builder.mapping()
-                mapping.append(self.mapping_key(checked=True) if value is undefined else value)
+                builder.mapping_key(mapping, value)
                 return self._mapping_items(mapping)
 
     def _mapping_items(self, mapping):
         self.lexer.pop(r':', checked=True)
-        mapping.append(self.expression(checked=True))
+        self.builder.mapping_value(mapping, self.expression(mapping, checked=True))
         if self.lexer.pop(r','):
             while not self.lexer.peek(r'\}'):
-                mapping.append(self.mapping_key(checked=True))
+                self.builder.mapping_key(mapping, self.mapping_key(mapping, checked=True))
                 self.lexer.pop(r':', checked=True)
-                mapping.append(self.expression(checked=True))
+                self.builder.mapping_value(mapping, self.expression(mapping, checked=True))
                 if not self.lexer.pop(r','):
                     break
         self.lexer.pop(r'\}', checked=True)
-        return mapping.close()
+        return self.builder.close_mapping(mapping)
 
     def mapping_key(self, checked=False):
         return self._one_of(

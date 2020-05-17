@@ -1,15 +1,7 @@
 [MESSAGES CONTROL]
 
 disable=
-    broad-except,
-    fixme,
-    inconsistent-return-statements,
     missing-docstring,
-    no-else-return,
-    no-self-use,
-    redefined-builtin,
-    too-few-public-methods,
-    too-many-public-methods,
 
 enable=
     useless-suppression

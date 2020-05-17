@@ -5,28 +5,62 @@ import json
 import re
 
 # canif
-from .pods import PodsBuilder
+from .base import Builder
 
 
-class FloatWithoutScientificNotation(float):
-    # From https://stackoverflow.com/a/18936966
+class Token:
 
-    def __init__(self, text):
+    def __init__(self, depth, collapsed_text, expanded_text):
+        self.depth = depth
+        self.collapsed_text = collapsed_text
+        self.expanded_text = expanded_text
+
+
+class Scope:
+
+    def __init__(self, parent):
+        self.parent = parent
+        self.depth = parent.depth + 1
+        self.queue = []
+        self.collapsed_len = 0
+        self.could_collapse = True
+
+    def append(self, token):
+        self.queue.append(token)
+        self.collapsed_len += len(token.collapsed_text)
+        indent_len = 2 * self.depth  # FIXME use config for '2'
+        max_width = 100  # FIXME read from config
+        if indent_len + self.collapsed_len > max_width:
+            self.expand()
+
+    def expand(self):
+        if self.parent:
+            self.parent.expand()
+        for token in self.queue:
+            print()
+            print('  ' * token.depth, end='')  # FIXME read that 2-spaces from config
+            print(token.expanded_text)
+        self.queue.clear()
+        self.could_collapse = False
+
+    def close(self):
+        if self.could_collapse:
+            
+
+
+class ArrayScope(Scope):
+
+    def __init__(self, depth):
         super().__init__()
-        self.__text = text
-
-    def __repr__(self):
-        return self.__text
+        self.num_elements = 0
 
 
-class PrettyPrintBuilder(PodsBuilder):
+class PrettyPrintBuilder(Builder):
     """
     A builder that assembles a pretty-printed output, and writes it out.
     """
 
-    float_class = FloatWithoutScientificNotation
-
-    def __init__(self, output, flatten=False, ensure_ascii=False):
+    def __init__(self, output, flatten=False, ensure_ascii=False, indent=2):
         """
         The pretty-printed output will be written to `output`, which should be a writable, text-mode file.
 
@@ -36,55 +70,57 @@ class PrettyPrintBuilder(PodsBuilder):
         self.output = output
         self.flatten = flatten
         self.ensure_ascii = ensure_ascii
+        self.indent = indent
 
-    def document(self, expression):
-        if self.flatten:
-            output_text = json.dumps(expression, sort_keys=True, ensure_ascii=self.ensure_ascii)
-        else:
-            output_text = self.collapse_short_arrays(
-                json.dumps(
-                    expression,
-                    indent=4,
-                    sort_keys=True,
-                    ensure_ascii=self.ensure_ascii,
-                )
-            )
-        self.output.write(output_text)
+    def _token(self, scope, text):
+        token = Token(scope.depth + 1, text)
+
+    def _indent(self, depth):
+        return '\n' + ' ' * self.indent * depth
+
+    def int(self, scope, raw, value):
+        return self._token(scope, raw)
+
+    def float(self, scope, raw, value):
+        return self._token(scope, raw)
 
     def named_constant(self, text):
-        normalised = super().named_constant(text)
-        if normalised is NotImplemented:
-            normalised = '$NotImplemented'
-        return normalised
+        return self._token(scope, text)
 
-    def set(self, elements):
-        return {'$set': elements}
+    def string(self, scope, raw, text):
+        return self._token(scope, raw)
 
-    def mapping(self, items):
-        for key in list(items.keys()):
-            if isinstance(key, tuple):
-                # Python tuples as keys
-                new_key = '$tuple' + json.dumps(key)
-                items[new_key] = items.pop(key)
-        return items
+    def regex(self, scope, raw, pattern, flags):
+        return self._token(scope, raw)
 
-    @staticmethod
-    def collapse_short_arrays(json_str):
-        def collapse(text):
-            text = re.sub(r'\s+', ' ', text)
-            text = re.sub(r'("(?:[^\\\"]|\\.)*")|(?<=[\{\[])\ |\ (?=[\}\]])', lambda m: m.group(1) or '', text)
-            return text
+    def python_repr(self, scope, raw):
+        return self._token(scope, raw)
 
-        return re.sub(
-            r'''
-            (?: "(?:[^\\\"]|\\.)*"
-              | ( [\{\[] (?: "(?:[^\\\"]|\\.)*"
-                           | [^\[\{\"\}\]]
-                           )+
-                  [\]\}] )
-              )
-        ''',
-            lambda m: collapse(m.group(1)) if m.group(1) and len(m.group(1)) < 100 else m.group(0),
-            json_str,
-            flags=re.X,
-        )
+    def identifier(self, scope, name):
+        return self._token(scope, name)
+
+    def open_array(self, scope, kind):
+        array = ArrayScope(scope.depth + 1, kind)
+        array.queue.append(Token(
+            array.depth + 1,
+            {list: '[', tuple: '(', set: '{'}[kind],
+        ))
+        array.flush()
+        return array
+
+    def array_element(self, scope, element):
+        if scope.num_elements > 0:
+            scope.append(Token(
+                array.depth + 1,
+                collapsed = ', '
+                expanded = ',',
+            ))
+        scope.flush()
+
+    def 
+
+    def mapping(self):
+        raise NotImplementedError
+
+    def function_call(self, function_name):
+        raise NotImplementedError

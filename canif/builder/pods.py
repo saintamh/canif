@@ -4,64 +4,58 @@
 from .base import Builder
 
 
-class Scope:
+undefined = object()
+
+
+class DocumentScope:
 
     def __init__(self):
-        self.children = []
+        self.expression = undefined
 
-    def __len__(self):
-        return len(self.children)
-
-    def append(self, child):
-        self.children.append(child)
+    def set_expression(self, expression):
+        assert self.expression is undefined, repr(self.expression)
+        self.expression = expression
 
     def close(self):
-        raise NotImplementedError
+        assert self.expression is not undefined
+        return self.expression
 
 
-class DocumentScope(Scope):
-
-    def append(self, child):
-        assert not self.children, self.children
-        super().append(child)
-
-    def close(self):
-        assert len(self.children) == 1, self.children
-        return self.children[0]
-
-
-class ArrayScope(Scope):
+class ArrayScope:
 
     def __init__(self, kind):
         assert kind in (list, tuple, set), repr(kind)
-        super().__init__()
         self.kind = kind
+        self.elements = []
+
+    def insert(self, element):
+        self.elements.append(element)
 
     def close(self):
-        return self.kind(self.children)
+        return self.kind(self.elements)
 
 
-class MappingScope(Scope):
-
-    undefined = object()
+class MappingScope:
 
     def __init__(self):
-        super().__init__()
-        self.key = self.undefined
+        self.items = {}
+        self.key = undefined
 
-    def append(self, child):
-        if self.key is self.undefined:
-            self.key = child
-        else:
-            super().append((self.key, child))
-            self.key = self.undefined
+    def insert_key(self, key):
+        assert self.key is undefined, repr(self.key)
+        self.key = key
+
+    def insert_value(self, value):
+        assert self.key is not undefined
+        self.items[self.key] = value
+        self.key = undefined
 
     def close(self):
         assert self.key is self.undefined, repr(self.key)
-        return dict(self.children)
+        return self.items
 
 
-class FunctionCallScope(Scope):
+class FunctionCallScope:
 
     special = {
         # https://docs.mongodb.com/manual/reference/mongodb-extended-json/
@@ -74,15 +68,18 @@ class FunctionCallScope(Scope):
     }
 
     def __init__(self, function_name):
-        super().__init__()
         self.function_name = function_name
+        self.arguments = []
+
+    def insert_argument(self, argument):
+        self.arguments.append(argument)
 
     def close(self):
         operator = self.special.get(self.function_name)
         if operator:
-            return operator(self.children)
+            return operator(self.arguments)
         else:
-            return {'$$%s' % self.function_name: self.children}
+            return {'$$%s' % self.function_name: self.arguments}
 
 
 class PodsBuilder(Builder):
@@ -92,55 +89,62 @@ class PodsBuilder(Builder):
 
     float_class = float
 
-    named_constants = {
-        'true': True,
-        'True': True,
-        'false': False,
-        'False': False,
-        'null': None,
-        'None': None,
-        'undefined': '$undefined',
-        'NotImplemented': NotImplemented,
-    }
+    def int(self, scope, raw, value):
+        return value
 
-    def float(self, text):
-        return self.float_class(text)
+    def float(self, scope, raw, value):
+        return value
 
-    def int(self, text):
-        return int(text)
+    def named_constant(self, scope, raw, value):
+        return value
 
-    def named_constant(self, text):
-        return self.named_constants[text]
-
-    def string(self, _raw_unused, text):
+    def string(self, scope, raw, text):
         return text
 
-    def regex(self, _raw_unused, pattern, flags):
+    def regex(self, scope, raw, pattern, flags):
         parsed = {'$regex': pattern}
         if flags:
             parsed['$options'] = flags
         return parsed
 
-    def python_repr(self, raw):
+    def python_repr(self, scope, raw):
         return '$repr%s' % raw
 
-    def identifier(self, name):
+    def identifier(self, scope, name):
         return '$$%s' % name
 
-    def document(self):
+    def open_document(self):
         return DocumentScope()
 
-    def array(self):
-        return ArrayScope(list)
+    def set_document_expression(self, scope, expression):
+        scope.set_expression(expression)
 
-    def tuple(self):
-        return ArrayScope(tuple)
+    def close_document(self, scope):
+        return scope.close()
 
-    def set(self):
-        return ArrayScope(set)
+    def open_array(self, scope, kind):
+        return ArrayScope(kind)
 
-    def mapping(self):
+    def insert_array_element(self, scope, element):
+        scope.append(element)
+
+    def close_array(self, scope):
+        return scope.close()
+
+    def open_mapping(self, scope):
         return MappingScope()
 
-    def function_call(self, function_name):
+    def insert_mapping_key(self, scope, key):
+        scope.insert_key(key)
+
+    def insert_mapping_value(self, scope, value):
+        scope.insert_value(value)
+
+    def open_function_call(self, scope, function_name):
         return FunctionCallScope(function_name)
+
+    def insert_function_call_argument(self, scope, argument):
+        scope.insert_argument(argument)
+
+    def close_function_call(self, scope):
+        return scope.close()
