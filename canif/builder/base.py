@@ -15,13 +15,25 @@ class Builder:
     def document(self, expression):
         raise NotImplementedError
 
-    def float(self, text):
+    def float(self, raw, value):
         raise NotImplementedError
 
-    def int(self, text):
+    def int(self, raw, value):
         raise NotImplementedError
 
-    def named_constant(self, text):
+    def named_constant(self, raw, value):
+        raise NotImplementedError
+
+    def string(self, raw, text):
+        raise NotImplementedError
+
+    def regex(self, raw, pattern, flags):
+        raise NotImplementedError
+
+    def python_repr(self, raw):
+        raise NotImplementedError
+
+    def identifier(self, name):
         raise NotImplementedError
 
     def array(self, elements):
@@ -34,18 +46,6 @@ class Builder:
         raise NotImplementedError
 
     def set(self, elements):
-        raise NotImplementedError
-
-    def string(self, text):
-        raise NotImplementedError
-
-    def regex(self, pattern, flags):
-        raise NotImplementedError
-
-    def python_repr(self, raw_text):
-        raise NotImplementedError
-
-    def identifier(self, name):
         raise NotImplementedError
 
     def function_call(self, function_name, arguments):

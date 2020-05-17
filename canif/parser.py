@@ -14,14 +14,14 @@ undefined = object()
 class Parser:
 
     named_constants = {
-        'true',
-        'True',
-        'false',
-        'False',
-        'null',
-        'None',
-        'undefined',
-        'NotImplemented',
+        'true': True,
+        'True': True,
+        'false': False,
+        'False': False,
+        'null': None,
+        'None': None,
+        'undefined': '$undefined',
+        'NotImplemented': NotImplemented,
     }
 
     def __init__(self, lexer, builder):
@@ -60,19 +60,83 @@ class Parser:
 
     def number(self, checked=False):
         match = self.lexer.pop(r'[\+\-]?\d+(?:\.\d+)?(?:[eE][\+\-]?\d+)?', checked)
-        if match:
-            text = match.group()
-            if re.search(r'[\.eE]', text):
-                return self.builder.float(text)
-            else:
-                return self.builder.int(text)
-        return undefined
+        if not match:
+            return undefined
+        text = match.group()
+        if re.search(r'[\.eE]', text):
+            return self.builder.float(text, float(text))
+        else:
+            return self.builder.int(text, int(text))
 
     def named_constant(self, checked=False):
         match = self.lexer.pop(r'|'.join(self.named_constants), checked)
         if not match:
             return undefined
-        return self.builder.named_constant(match.group())
+        raw = match.group()
+        return self.builder.named_constant(raw, self.named_constants[raw])
+
+    def single_quoted_string(self, checked=False):
+        if not self.lexer.pop(r"'", checked, do_skip=False):
+            return undefined
+        match = self.lexer.pop(r"((?:[^\\\']|\\.)*)\'", checked=True)
+        raw = match.group(1)
+        return self.builder.string(raw, self._parse_string_escapes(raw))
+
+    def double_quoted_string(self, checked=False):
+        if not self.lexer.pop(r'"', checked, do_skip=False):
+            return undefined
+        match = self.lexer.pop(r'((?:[^\\\"]|\\.)*)\"', checked=True)
+        raw = match.group(1)
+        return self.builder.string(raw, self._parse_string_escapes(raw))
+
+    def regex_literal(self, checked=False):
+        if not self.lexer.pop(r'/', checked, do_skip=False):
+            return undefined
+        match = self.lexer.pop(r'((?:[^\\/]|\\.)*)/(\w*)', checked=True)
+        raw, flags = match.groups()
+        return self.builder.regex(raw, self._parse_string_escapes(raw), flags)
+
+    @staticmethod
+    def _parse_string_escapes(raw_text):
+        backslash_escapes = {
+            # Using http://json.org/ as a reference
+            '\\': (r'\\', lambda m: '\\'),
+            '"': (r'"', lambda m: '"'),
+            '/': (r'/', lambda m: '/'),
+            'b': (r'b', lambda m: '\x08'),
+            'f': (r'f', lambda m: '\x0C'),
+            'n': (r'n', lambda m: '\n'),
+            'r': (r'r', lambda m: '\r'),
+            't': (r't', lambda m: '\t'),
+            'u': (r'u(?:[0-9a-fA-F]{4})', lambda m: chr(int(m.group()[2:], 16))),
+            'x': (r'x(?:[0-9a-fA-F]{2})', lambda m: chr(int(m.group()[2:], 16))),
+            # Not strict JSON
+            "'": (r"'", lambda m: "'"),
+        }
+        return re.sub(
+            r'\\(?:%s)' % '|'.join(regex for regex, _ in backslash_escapes.values()),
+            lambda m: backslash_escapes[m.group()[1]][1](m),  # you're confused, pylint: disable=unnecessary-lambda
+            raw_text,
+        )
+
+    def unquoted_key(self, checked=False):
+        match = self.lexer.pop(r'\$?(?!\d)\w+', checked)
+        if not match:
+            return undefined
+        raw = match.group()
+        return self.builder.string(raw, raw)
+
+    def python_repr_expression(self, checked=False):
+        match = self.lexer.pop(r'<\w+(?:[^\'\">]|"(?:[^\"\\]|\\.)*"|\'(?:[^\'\\]|\\.)*\')+>', checked)
+        if not match:
+            return undefined
+        return self.builder.python_repr(match.group())
+
+    def identifier(self, checked=False):
+        match = self.lexer.pop(r'\$?(?!\d)\w+', checked)
+        if not match:
+            return undefined
+        return self.builder.identifier(match.group())
 
     def square_bracketed_array(self, checked=False):
         if not self.lexer.pop(r'\[', checked):
@@ -141,74 +205,13 @@ class Parser:
             expected=('key' if checked else None),
         )
 
-    def single_quoted_string(self, checked=False):
-        if not self.lexer.pop(r"'", checked, do_skip=False):
-            return undefined
-        match = self.lexer.pop(r"((?:[^\\\']|\\.)*)\'", checked=True)
-        return self.builder.string(self._parse_string_escapes(match.group(1)))
-
-    def double_quoted_string(self, checked=False):
-        if not self.lexer.pop(r'"', checked, do_skip=False):
-            return undefined
-        match = self.lexer.pop(r'((?:[^\\\"]|\\.)*)\"', checked=True)
-        return self.builder.string(self._parse_string_escapes(match.group(1)))
-
-    def regex_literal(self, checked=False):
-        if not self.lexer.pop(r'/', checked, do_skip=False):
-            return undefined
-        match = self.lexer.pop(r'((?:[^\\/]|\\.)*)/(\w*)', checked=True)
-        raw_pattern, flags = match.groups()
-        return self.builder.regex(self._parse_string_escapes(raw_pattern), flags)
-
-    @staticmethod
-    def _parse_string_escapes(raw_text):
-        backslash_escapes = {
-            # Using http://json.org/ as a reference
-            '\\': (r'\\', lambda m: '\\'),
-            '"': (r'"', lambda m: '"'),
-            '/': (r'/', lambda m: '/'),
-            'b': (r'b', lambda m: '\x08'),
-            'f': (r'f', lambda m: '\x0C'),
-            'n': (r'n', lambda m: '\n'),
-            'r': (r'r', lambda m: '\r'),
-            't': (r't', lambda m: '\t'),
-            'u': (r'u(?:[0-9a-fA-F]{4})', lambda m: chr(int(m.group()[2:], 16))),
-            'x': (r'x(?:[0-9a-fA-F]{2})', lambda m: chr(int(m.group()[2:], 16))),
-            # Not strict JSON
-            "'": (r"'", lambda m: "'"),
-        }
-        return re.sub(
-            r'\\(?:%s)' % '|'.join(regex for regex, _ in backslash_escapes.values()),
-            lambda m: backslash_escapes[m.group()[1]][1](m),  # you're confused, pylint: disable=unnecessary-lambda
-            raw_text,
-        )
-
-    def unquoted_key(self, checked=False):
-        match = self.lexer.pop(r'\$?(?!\d)\w+', checked)
-        if not match:
-            return undefined
-        return self.builder.string(match.group())
-
-    def python_repr_expression(self, checked=False):
-        match = self.lexer.pop(r'<\w+(?:[^\'\">]|"(?:[^\"\\]|\\.)*"|\'(?:[^\'\\]|\\.)*\')+>', checked)
-        if not match:
-            return undefined
-        return self.builder.python_repr(match.group())
-
-    def identifier(self, checked=False):
-        match = self.lexer.pop(r'\$?(?!\d)\w+', checked)
-        if not match:
-            return undefined
-        return self.builder.identifier(match.group())
-
     def function_call(self, checked=False):
         match = self.lexer.pop(r'(?:new\s+)?(\w+(?:\.\w+)*)\s*\(', checked)
         if not match:
             return undefined
-        return self.builder.function_call(
-            match.group(1),
-            self._function_arguments(),
-        )
+        function_name = match.group(1)
+        arguments = self._function_arguments()
+        return self.builder.function_call(function_name, arguments)
 
     def _function_arguments(self):
         re_end = r'\)'

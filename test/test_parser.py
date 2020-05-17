@@ -47,25 +47,25 @@ ALL_TEST_CASES = [
     # Numbers
     Case(
         '42',
-        expected_parse=AST.int('42'),
+        expected_parse=AST.int('42', 42),
         expected_pods=42,
         expected_json='42',
     ),
     Case(
         '3.14',
-        expected_parse=AST.float('3.14'),
+        expected_parse=AST.float('3.14', 3.14),
         expected_pods=3.14,
         expected_json='3.14',
     ),
     Case(
         '5.12e-1',
-        expected_parse=AST.float('5.12e-1'),
+        expected_parse=AST.float('5.12e-1', 5.12e-1),
         expected_pods=0.512,
         expected_json='0.512',
     ),
     Case(
         '5.12e-17',
-        expected_parse=AST.float('5.12e-17'),
+        expected_parse=AST.float('5.12e-17', 5.12e-17),
         expected_pods=5.12e-17,
         expected_json='5.12e-17',
     ),
@@ -73,49 +73,49 @@ ALL_TEST_CASES = [
     # Named constants
     Case(
         'true',
-        expected_parse=AST.named_constant('true'),
+        expected_parse=AST.named_constant('true', True),
         expected_pods=True,
         expected_json='true',
     ),
     Case(
         'false',
-        expected_parse=AST.named_constant('false'),
+        expected_parse=AST.named_constant('false', False),
         expected_pods=False,
         expected_json='false',
     ),
     Case(
         'True',
-        expected_parse=AST.named_constant('True'),
+        expected_parse=AST.named_constant('True', True),
         expected_pods=True,
         expected_json='true',
     ),
     Case(
         'False',
-        expected_parse=AST.named_constant('False'),
+        expected_parse=AST.named_constant('False', False),
         expected_pods=False,
         expected_json='false',
     ),
     Case(
         'null',
-        expected_parse=AST.named_constant('null'),
+        expected_parse=AST.named_constant('null', None),
         expected_pods=None,
         expected_json='null',
     ),
     Case(
         'None',
-        expected_parse=AST.named_constant('None'),
+        expected_parse=AST.named_constant('None', None),
         expected_pods=None,
         expected_json='null',
     ),
     Case(
         'undefined',
-        expected_parse=AST.named_constant('undefined'),
+        expected_parse=AST.named_constant('undefined', '$undefined'),
         expected_pods='$undefined',
         expected_json='"$undefined"',
     ),
     Case(
         'NotImplemented',
-        expected_parse=AST.named_constant('NotImplemented'),
+        expected_parse=AST.named_constant('NotImplemented', NotImplemented),
         expected_pods=NotImplemented,
         expected_json='"$NotImplemented"',
     ),
@@ -123,13 +123,13 @@ ALL_TEST_CASES = [
     # Arrays
     Case(
         '[1]',
-        expected_parse=AST.array([AST.int('1')]),
+        expected_parse=AST.array([AST.int('1', 1)]),
         expected_pods=[1],
         expected_json='[1]',
     ),
     Case(
         '[1,]',
-        expected_parse=AST.array([AST.int('1')]),
+        expected_parse=AST.array([AST.int('1', 1)]),
         expected_pods=[1],
         expected_json='[1]',
     ),
@@ -147,7 +147,7 @@ ALL_TEST_CASES = [
     ),
     Case(
         '[1, ["a"]]',
-        expected_parse=AST.array([AST.int('1'), AST.array([AST.string('a')])]),
+        expected_parse=AST.array([AST.int('1', 1), AST.array([AST.string('a', 'a')])]),
         expected_pods=[1, ['a']],
         expected_json='[1, ["a"]]',
     ),
@@ -155,7 +155,7 @@ ALL_TEST_CASES = [
     # Tuples
     Case(
         '(1,)',
-        expected_parse=AST.tuple((AST.int('1'),)),
+        expected_parse=AST.tuple((AST.int('1', 1),)),
         expected_pods=(1,),
         expected_json='[1]',
     ),
@@ -178,7 +178,7 @@ ALL_TEST_CASES = [
     ),
     Case(
         '(1, ("a",))',
-        expected_parse=AST.tuple((AST.int('1'), AST.tuple((AST.string('a'),)))),
+        expected_parse=AST.tuple((AST.int('1', 1), AST.tuple((AST.string('a', 'a'),)))),
         expected_pods=(1, ('a',)),
         expected_json='[1, ["a"]]',
     ),
@@ -192,13 +192,13 @@ ALL_TEST_CASES = [
     ),
     Case(
         '{"a": 1}',
-        expected_parse=AST.mapping({AST.string('a'): AST.int('1')}),
+        expected_parse=AST.mapping({AST.string('a', 'a'): AST.int('1', 1)}),
         expected_pods={'a': 1},
         expected_json='{"a": 1}',
     ),
     Case(
         '{"a": 1,}',
-        expected_parse=AST.mapping({AST.string('a'): AST.int('1')}),
+        expected_parse=AST.mapping({AST.string('a', 'a'): AST.int('1', 1)}),
         expected_pods={'a': 1},
         expected_json='{"a": 1}',
     ),
@@ -212,7 +212,7 @@ ALL_TEST_CASES = [
     ),
     Case(
         '{a: 1}',
-        expected_parse=AST.mapping({AST.string('a'): AST.int('1')}),
+        expected_parse=AST.mapping({AST.string('a', 'a'): AST.int('1', 1)}),
         expected_pods={'a': 1},
         expected_json='{"a": 1}',
     ),
@@ -220,7 +220,7 @@ ALL_TEST_CASES = [
     # Mappings with tuples as keys
     Case(
         '{(1, 2): 3}',
-        expected_parse=AST.mapping({AST.tuple((AST.int('1'), AST.int('2'))): AST.int('3')}),
+        expected_parse=AST.mapping({AST.tuple((AST.int('1', 1), AST.int('2', 2))): AST.int('3', 3)}),
         expected_pods={(1, 2): 3},
         expected_json='{"$tuple[1, 2]": 3}',
     ),
@@ -228,9 +228,9 @@ ALL_TEST_CASES = [
         '{(1, (2, "3")): 4}',
         expected_parse=AST.mapping({
             AST.tuple((
-                AST.int('1'),
-                AST.tuple((AST.int('2'), AST.string('3'))),
-            )): AST.int('4'),
+                AST.int('1', 1),
+                AST.tuple((AST.int('2', 2), AST.string('3', '3'))),
+            )): AST.int('4', 4),
         }),
         expected_pods={(1, (2, '3')): 4},
         expected_json=r'{"$tuple[1, [2, \"3\"]]": 4}',
@@ -239,13 +239,13 @@ ALL_TEST_CASES = [
     # Sets
     Case(
         '{1}',
-        expected_parse=AST.set([AST.int('1')]),
+        expected_parse=AST.set([AST.int('1', 1)]),
         expected_pods={1},
         expected_json='{"$set": [1]}',
     ),
     Case(
         '{1,}',
-        expected_parse=AST.set([AST.int('1')]),
+        expected_parse=AST.set([AST.int('1', 1)]),
         expected_pods={1},
         expected_json='{"$set": [1]}',
     ),
@@ -259,7 +259,7 @@ ALL_TEST_CASES = [
     ),
     Case(
         '{1, 2}',
-        expected_parse=AST.set([AST.int('1'), AST.int('2')]),
+        expected_parse=AST.set([AST.int('1', 1), AST.int('2', 2)]),
         expected_pods={1, 2},
         expected_json='{"$set": [1, 2]}',
     ),
@@ -269,7 +269,7 @@ ALL_TEST_CASES = [
         '''
             'text'
         ''',
-        expected_parse=AST.string('text'),
+        expected_parse=AST.string('text', 'text'),
         expected_pods='text',
         expected_json='"text"',
     ),
@@ -277,7 +277,7 @@ ALL_TEST_CASES = [
         r'''
             'I "love\" this'
         ''',
-        expected_parse=AST.string('I "love" this'),
+        expected_parse=AST.string(r'I "love\" this', 'I "love" this'),
         expected_pods='I "love" this',
         expected_json=r'"I \"love\" this"',
     ),
@@ -285,7 +285,7 @@ ALL_TEST_CASES = [
         r'''
             'It\'s Sam\'s hat'
         ''',
-        expected_parse=AST.string("It's Sam's hat"),
+        expected_parse=AST.string(r"It\'s Sam\'s hat", "It's Sam's hat"),
         expected_pods="It's Sam's hat",
         expected_json='"It\'s Sam\'s hat"',
     ),
@@ -295,7 +295,10 @@ ALL_TEST_CASES = [
         r'''
             ' \\ \" \/ \b \f \n \r \t \u0424 \x7E \' '
         ''',
-        expected_parse=AST.string(' \\ " / \x08 \x0C \n \r \t Ф ~ \' '),
+        expected_parse=AST.string(
+            r' \\ \" \/ \b \f \n \r \t \u0424 \x7E \' ',
+            ' \\ " / \x08 \x0C \n \r \t Ф ~ \' ',
+        ),
         expected_pods=' \\ " / \x08 \x0C \n \r \t Ф ~ \' ',
         expected_json=r'''" \\ \" / \b \f \n \r \t Ф ~ ' "''',
     ),
@@ -305,7 +308,7 @@ ALL_TEST_CASES = [
         '''
             "text"
         ''',
-        expected_parse=AST.string('text'),
+        expected_parse=AST.string('text', 'text'),
         expected_pods='text',
         expected_json='"text"',
     ),
@@ -313,7 +316,7 @@ ALL_TEST_CASES = [
         r'''
             "I \"love\" this"
         ''',
-        expected_parse=AST.string('I "love" this'),
+        expected_parse=AST.string(r'I \"love\" this', 'I "love" this'),
         expected_pods='I "love" this',
         expected_json=r'"I \"love\" this"',
     ),
@@ -321,7 +324,7 @@ ALL_TEST_CASES = [
         r'''
             "It's Sam\'s hat"
         ''',
-        expected_parse=AST.string("It's Sam's hat"),
+        expected_parse=AST.string(r"It's Sam\'s hat", "It's Sam's hat"),
         expected_pods="It's Sam's hat",
         expected_json='"It\'s Sam\'s hat"',
     ),
@@ -331,7 +334,10 @@ ALL_TEST_CASES = [
         r'''
             " \\ \" \/ \b \f \n \r \t \u0424 \x7E \' "
         ''',
-        expected_parse=AST.string(' \\ " / \x08 \x0C \n \r \t Ф ~ \' '),
+        expected_parse=AST.string(
+            r' \\ \" \/ \b \f \n \r \t \u0424 \x7E \' ',
+            ' \\ " / \x08 \x0C \n \r \t Ф ~ \' ',
+        ),
         expected_pods=' \\ " / \x08 \x0C \n \r \t Ф ~ \' ',
         expected_json=r'''" \\ \" / \b \f \n \r \t Ф ~ ' "''',
     ),
@@ -341,7 +347,7 @@ ALL_TEST_CASES = [
         '''
             36 // thirty-six
         ''',
-        expected_parse=AST.int('36'),
+        expected_parse=AST.int('36', 36),
         expected_pods=36,
         expected_json='36',
     ),
@@ -350,7 +356,7 @@ ALL_TEST_CASES = [
            // a comment
            "http://not.a.comment/"
         ''',
-        expected_parse=AST.string('http://not.a.comment/'),
+        expected_parse=AST.string('http://not.a.comment/', 'http://not.a.comment/'),
         expected_pods='http://not.a.comment/',
         expected_json='"http://not.a.comment/"',
     ),
@@ -398,19 +404,19 @@ ALL_TEST_CASES = [
     # Function calls
     Case(
         'x(1)',
-        expected_parse=AST.function_call('x', [AST.int('1')]),
+        expected_parse=AST.function_call('x', [AST.int('1', 1)]),
         expected_pods={'$$x': [1]},
         expected_json='{"$$x": [1]}',
     ),
     Case(
         'x(1,)',
-        expected_parse=AST.function_call('x', [AST.int('1')]),
+        expected_parse=AST.function_call('x', [AST.int('1', 1)]),
         expected_pods={'$$x': [1]},
         expected_json='{"$$x": [1]}',
     ),
     Case(
         'x(1, 2)',
-        expected_parse=AST.function_call('x', [AST.int('1'), AST.int('2')]),
+        expected_parse=AST.function_call('x', [AST.int('1', 1), AST.int('2', 2)]),
         expected_pods={'$$x': [1, 2]},
         expected_json='{"$$x": [1, 2]}',
     ),
@@ -422,8 +428,8 @@ ALL_TEST_CASES = [
             'OrderedDict',
             [
                 AST.array([
-                    AST.tuple((AST.string('a'), AST.int('1'))),
-                    AST.tuple((AST.string('b'), AST.int('2'))),
+                    AST.tuple((AST.string('a', 'a'), AST.int('1', 1))),
+                    AST.tuple((AST.string('b', 'b'), AST.int('2', 2))),
                 ]),
             ],
         ),
@@ -433,14 +439,20 @@ ALL_TEST_CASES = [
     Case(
         # MongoDB BSON date objects
         'Date("1970-09-12")',
-        expected_parse=AST.function_call('Date', [AST.string('1970-09-12')]),
+        expected_parse=AST.function_call(
+            'Date',
+            [AST.string('1970-09-12', '1970-09-12')],
+        ),
         expected_pods={'$date': '1970-09-12'},
         expected_json='{"$date": "1970-09-12"}',
     ),
     Case(
         # MongoDB BSON ObjectId objects
         'ObjectId("1234")',
-        expected_parse=AST.function_call('ObjectId', [AST.string('1234')]),
+        expected_parse=AST.function_call(
+            'ObjectId',
+            [AST.string('1234', '1234')],
+        ),
         expected_pods={'$oid': '1234'},
         expected_json='{"$oid": "1234"}',
     ),

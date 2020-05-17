@@ -9,19 +9,6 @@ class PodsBuilder(Builder):
     A builder that assembles a Plain Old Data Structure (lists, dicts, strings) with the parsed data
     """
 
-    float_class = float
-
-    named_constants = {
-        'true': True,
-        'True': True,
-        'false': False,
-        'False': False,
-        'null': None,
-        'None': None,
-        'undefined': '$undefined',
-        'NotImplemented': NotImplemented,
-    }
-
     special_function_calls = {
         # https://docs.mongodb.com/manual/reference/mongodb-extended-json/
         #
@@ -35,14 +22,29 @@ class PodsBuilder(Builder):
     def document(self, expression):
         return expression
 
-    def float(self, text):
-        return self.float_class(text)
+    def float(self, raw, value):
+        return value
 
-    def int(self, text):
-        return int(text)
+    def int(self, raw, value):
+        return value
 
-    def named_constant(self, text):
-        return self.named_constants[text]
+    def named_constant(self, raw, value):
+        return value
+
+    def string(self, raw, text):
+        return text
+
+    def regex(self, raw, pattern, flags):
+        parsed = {'$regex': pattern}
+        if flags:
+            parsed['$options'] = flags
+        return parsed
+
+    def python_repr(self, raw):
+        return '$repr%s' % raw
+
+    def identifier(self, name):
+        return '$$%s' % name
 
     def array(self, elements):
         return elements
@@ -56,24 +58,10 @@ class PodsBuilder(Builder):
     def set(self, elements):
         return set(elements)
 
-    def string(self, text):
-        return text
-
-    def regex(self, pattern, flags):
-        parsed = {'$regex': pattern}
-        if flags:
-            parsed['$options'] = flags
-        return parsed
-
-    def python_repr(self, raw_text):
-        return '$repr%s' % raw_text
-
-    def identifier(self, name):
-        return '$$%s' % name
-
     def function_call(self, function_name, arguments):
         operator = self.special_function_calls.get(function_name)
         if operator:
-            return operator(arguments)
+            parsed = operator(arguments)
         else:
-            return {'$$%s' % function_name: arguments}
+            parsed = {'$$%s' % function_name: arguments}
+        return parsed

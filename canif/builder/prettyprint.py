@@ -51,11 +51,10 @@ class PrettyPrintBuilder(PodsBuilder):
             )
         self.output.write(output_text)
 
-    def named_constant(self, text):
-        normalised = super().named_constant(text)
-        if normalised is NotImplemented:
-            normalised = '$NotImplemented'
-        return normalised
+    def named_constant(self, raw, value):
+        if value is NotImplemented:
+            value = '$NotImplemented'
+        return value
 
     def set(self, elements):
         return {'$set': elements}
