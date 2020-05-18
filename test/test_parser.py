@@ -277,7 +277,7 @@ ALL_TEST_CASES = [
     Case(
         '{}',
         expected_parse=[
-            AST.open_mapping_or_set(),
+            AST.open_mapping(),
             AST.close_mapping(),
         ],
         expected_pods={},
@@ -287,7 +287,7 @@ ALL_TEST_CASES = [
     Case(
         '{"a": 1}',
         expected_parse=[
-            AST.open_mapping_or_set(),
+            AST.open_mapping(),
             AST.string('"a"', 'a'),
             AST.mapping_key(),
             AST.int('1', 1),
@@ -301,7 +301,7 @@ ALL_TEST_CASES = [
     Case(
         '{"a": 1,}',
         expected_parse=[
-            AST.open_mapping_or_set(),
+            AST.open_mapping(),
             AST.string('"a"', 'a'),
             AST.mapping_key(),
             AST.int('1', 1),
@@ -323,7 +323,7 @@ ALL_TEST_CASES = [
     Case(
         '{a: 1}',
         expected_parse=[
-            AST.open_mapping_or_set(),
+            AST.open_mapping(),
             AST.string('a', 'a'),
             AST.mapping_key(),
             AST.int('1', 1),
@@ -339,7 +339,7 @@ ALL_TEST_CASES = [
     Case(
         '{(1, 2): 3}',
         expected_parse=[
-            AST.open_mapping_or_set(),
+            AST.open_mapping(),
             AST.open_array(tuple),
             AST.int('1', 1),
             AST.array_element(),
@@ -358,7 +358,7 @@ ALL_TEST_CASES = [
     Case(
         '{(1, (2, "3")): 4}',
         expected_parse=[
-            AST.open_mapping_or_set(),
+            AST.open_mapping(),
             AST.open_array(tuple),
             AST.int('1', 1),
             AST.array_element(),
@@ -384,7 +384,7 @@ ALL_TEST_CASES = [
     Case(
         '{1}',
         expected_parse=[
-            AST.open_mapping_or_set(),
+            AST.open_set(),
             AST.int('1', 1),
             AST.set_element(),
             AST.close_set(),
@@ -396,7 +396,7 @@ ALL_TEST_CASES = [
     Case(
         '{1,}',
         expected_parse=[
-            AST.open_mapping_or_set(),
+            AST.open_set(),
             AST.int('1', 1),
             AST.set_element(),
             AST.close_set(),
@@ -416,7 +416,7 @@ ALL_TEST_CASES = [
     Case(
         '{1, 2}',
         expected_parse=[
-            AST.open_mapping_or_set(),
+            AST.open_set(),
             AST.int('1', 1),
             AST.set_element(),
             AST.int('2', 2),

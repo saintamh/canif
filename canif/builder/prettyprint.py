@@ -100,7 +100,7 @@ class PrettyPrintBuilder(PodsBuilder):
             force_flat_comma=(kind is tuple and length == 1),
         )
 
-    def open_mapping_or_set(self):
+    def open_mapping(self):
         self._print('{')
         self.stack.append(0)
         self.spacer = self._indent_string()
@@ -115,6 +115,11 @@ class PrettyPrintBuilder(PodsBuilder):
     def close_mapping(self):
         length = self.stack.pop()
         self._end_comma_separated_sequence('}', length)
+
+    def open_set(self):
+        self._print('{')
+        self.stack.append(0)
+        self.spacer = self._indent_string()
 
     def set_element(self):
         self.spacer = ',' + self._indent_string()

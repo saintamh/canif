@@ -1,12 +1,31 @@
 #!/usr/bin/env python3
 
 # standards
+from contextlib import contextmanager
 from itertools import count
 import re
 
 
 class ParserError(ValueError):
     pass
+
+
+class Recorder:
+    """
+    Lets us buffer to memory calls to Builder methods, for cases where we need to parse ahead a little before we know what builder
+    calls to make (unlike most cases, where we call Builder methods immediately as we parse the input).
+    """
+
+    def __init__(self, host):
+        self._host = host
+        self._calls = []
+
+    def __getattr__(self, method_name):
+        return lambda *args, **kwargs: self._calls.append((method_name, args, kwargs))
+
+    def playback(self):
+        for method_name, args, kwargs in self._calls:
+            getattr(self._host, method_name)(*args, **kwargs)
 
 
 class Parser:
@@ -25,6 +44,14 @@ class Parser:
     def __init__(self, lexer, builder):
         self.lexer = lexer
         self.builder = builder
+
+    @contextmanager
+    def record_builder_calls(self):
+        previous_builder = self.builder  # NB could be nested so this could be another Recorder
+        recorder = Recorder(previous_builder)
+        self.builder = recorder
+        yield recorder
+        self.builder = previous_builder
 
     def _one_of(self, *functions, expected=None):
         for function in functions:
@@ -166,22 +193,25 @@ class Parser:
 
     def mapping_or_set(self, checked=False):
         if self.lexer.pop(r'\{', checked):
-            self.builder.open_mapping_or_set()
             if self.lexer.pop(r'\}'):
                 # empty mapping
+                self.builder.open_mapping()
                 self.builder.close_mapping()
             else:
-                have_possible_set_element = self._one_of(
-                    self.mapping_key,
-                    self.expression,
-                )
+                with self.record_builder_calls() as recorder:
+                    have_possible_set_element = self._one_of(
+                        self.mapping_key,
+                        self.expression,
+                    )
                 if have_possible_set_element and (self.lexer.pop(r',') or self.lexer.peek(r'\}')):
-                    self._continue_as_set()
+                    self._continue_as_set(recorder)
                 else:
-                    self._continue_as_mapping(have_possible_set_element)
+                    self._continue_as_mapping(have_possible_set_element, recorder)
             return True
 
-    def _continue_as_set(self):
+    def _continue_as_set(self, recorder):
+        self.builder.open_set()
+        recorder.playback()
         self.builder.set_element()
         self._comma_separated_list(
             r'\}',
@@ -189,7 +219,9 @@ class Parser:
         )
         self.builder.close_set()
 
-    def _continue_as_mapping(self, first_key_already_parsed):
+    def _continue_as_mapping(self, first_key_already_parsed, recorder):
+        self.builder.open_mapping()
+        recorder.playback()
         if not first_key_already_parsed:
             self.mapping_key(checked=True)
         self.lexer.pop(r':', checked=True)

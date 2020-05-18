@@ -48,7 +48,7 @@ class Builder:
     def close_array(self):
         raise NotImplementedError
 
-    def open_mapping_or_set(self):
+    def open_mapping(self):
         raise NotImplementedError
 
     def mapping_key(self):
@@ -58,6 +58,12 @@ class Builder:
         raise NotImplementedError
 
     def close_mapping(self):
+        raise NotImplementedError
+
+    def open_set(self):
+        raise NotImplementedError
+
+    def set_element(self):
         raise NotImplementedError
 
     def close_set(self):

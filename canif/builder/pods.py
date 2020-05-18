@@ -40,9 +40,6 @@ class Mapping:
         return self.items
 
 
-MAPPING_OR_SET = object()
-
-
 class FunctionCall:
 
     special = {
@@ -121,25 +118,20 @@ class PodsBuilder(Builder):
         collection = self.stack[-1]
         collection.append(element)
 
-    def close_array(self):
+    def _close_collection(self):
         collection = self.stack.pop()
         value = collection.build()
         self.stack.append(value)
 
-    def open_mapping_or_set(self):
-        self.stack.append(MAPPING_OR_SET)
+    def close_array(self):
+        self._close_collection()
 
-    def _mapping_from_stack(self):
-        mapping = self.stack[-1]
-        if mapping is MAPPING_OR_SET:
-            mapping = Mapping()
-            self.stack.pop()
-            self.stack.append(mapping)
-        return mapping
+    def open_mapping(self):
+        self.stack.append(Mapping())
 
     def mapping_key(self):
         key = self.stack.pop()
-        mapping = self._mapping_from_stack()
+        mapping = self.stack[-1]
         mapping.add_key(key)
 
     def mapping_value(self):
@@ -148,27 +140,18 @@ class PodsBuilder(Builder):
         mapping.add_value(value)
 
     def close_mapping(self):
-        mapping = self._mapping_from_stack()
-        self.stack.pop()
-        value = mapping.build()
-        self.stack.append(value)
+        self._close_collection()
 
-    def _set_from_stack(self):
-        collection = self.stack[-1]
-        if collection is MAPPING_OR_SET:
-            collection = Collection(set)
-            self.stack.pop()
-            self.stack.append(collection)
-        return collection
+    def open_set(self):
+        self.stack.append(Collection(set))
 
     def set_element(self):
         element = self.stack.pop()
-        collection = self._set_from_stack()
+        collection = self.stack[-1]
         collection.append(element)
 
     def close_set(self):
-        self._set_from_stack()
-        self.close_array()
+        self._close_collection()
 
     def open_function_call(self):
         function_name = self.stack.pop()
@@ -181,6 +164,4 @@ class PodsBuilder(Builder):
         function_call.append_argument(argument)
 
     def close_function_call(self):
-        function_call = self.stack.pop()
-        value = function_call.build()
-        self.stack.append(value)
+        self._close_collection()
