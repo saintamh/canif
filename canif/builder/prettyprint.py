@@ -36,7 +36,25 @@ class PrettyPrintBuilder(PodsBuilder):
         self.output.write(text)
 
     def _indent_string(self):
-        return linesep + ' ' * (2 * len(self.stack))
+        if self.indent == 0:
+            return ''
+        depth = self.indent * len(self.stack)
+        return linesep + ' ' * depth
+
+    def _comma_separator(self):
+        if self.indent:
+            self.spacer = ',' + self._indent_string()
+        else:
+            self.spacer = ', '
+
+    def _end_comma_separated_sequence(self, final_token, length, force_flat_comma=False):
+        if self.indent == 0:
+            self.spacer = ',' if force_flat_comma else ''
+        elif length == 0:
+            self.spacer = ''
+        else:
+            self.spacer = ',' + self._indent_string()
+        self._print(final_token)
 
     def float(self, raw, value):
         self._print(raw)
@@ -71,14 +89,16 @@ class PrettyPrintBuilder(PodsBuilder):
         self.spacer = self._indent_string()
 
     def array_element(self):
-        self._print(',')
         self.stack[-1][1] += 1
-        self.spacer = self._indent_string()
+        self._comma_separator()
 
     def close_array(self):
         kind, length = self.stack.pop()
-        self.spacer = self._indent_string() if length > 0 else ''
-        self._print({list: ']', tuple: ']'}[kind])
+        self._end_comma_separated_sequence(
+            {list: ']', tuple: ')'}[kind],
+            length,
+            force_flat_comma=(kind is tuple and length == 1),
+        )
 
     def open_mapping_or_set(self):
         self._print('{')
@@ -89,23 +109,20 @@ class PrettyPrintBuilder(PodsBuilder):
         self._print(': ')
 
     def mapping_value(self):
-        self._print(',')
-        self.spacer = self._indent_string()
         self.stack[-1] += 1
+        self._comma_separator()
 
     def close_mapping(self):
         length = self.stack.pop()
-        self.spacer = self._indent_string() if length > 0 else ''
-        self._print('}')
+        self._end_comma_separated_sequence('}', length)
 
     def set_element(self):
-        self._print(',')
-        self.spacer = self._indent_string()
+        self.spacer = ',' + self._indent_string()
+        self._comma_separator()
 
     def close_set(self):
         length = self.stack.pop()
-        self.spacer = self._indent_string() if length > 0 else ''
-        self._print('}')
+        self._end_comma_separated_sequence('}', length)
 
     def open_function_call(self):
         self._print('(')
@@ -113,11 +130,9 @@ class PrettyPrintBuilder(PodsBuilder):
         self.spacer = self._indent_string()
 
     def function_argument(self):
-        self._print(',')
-        self.spacer = self._indent_string()
         self.stack[-1] += 1
+        self._comma_separator()
 
     def close_function_call(self):
         length = self.stack.pop()
-        self.spacer = self._indent_string() if length > 0 else ''
-        self._print(')')
+        self._end_comma_separated_sequence(')', length)
