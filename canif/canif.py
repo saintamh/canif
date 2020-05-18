@@ -21,9 +21,10 @@ def parse_command_line(
         ):
     parser = argparse.ArgumentParser(description='Pretty-print JSON and JSON-like data')
     parser.add_argument(
-        '--flatten',
-        action='store_true',
-        help='Print output on one line (rather than indented)',
+        '--indent',
+        type=int,
+        default=2,
+        help='Indentation level (0 means flattened, single-line output)',
     )
     parser.add_argument(
         '--json-output',
@@ -57,7 +58,7 @@ def run(options, input_bytes):
         output_buffer = StringIO()
         try:
             lexer = Lexer(input_text)
-            builder = PrettyPrintBuilder(output_buffer, flatten=options.flatten, ensure_ascii=options.ensure_ascii)
+            builder = PrettyPrintBuilder(output_buffer, indent=options.indent, ensure_ascii=options.ensure_ascii)
             parser = Parser(lexer, builder)
             parser.document()
             output_text = output_buffer.getvalue()

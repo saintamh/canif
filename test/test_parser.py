@@ -670,7 +670,7 @@ def test_json_output(input_text, expected_parse, expected_pods, expected_json):
     del expected_pods  # not used in this test, pylint
     output_buffer = StringIO()
     lexer = Lexer(input_text)
-    builder = PrettyPrintBuilder(output_buffer, flatten=True)
+    builder = PrettyPrintBuilder(output_buffer, indent=0)
     parser = Parser(lexer, builder)
     try:
         parser.document()
