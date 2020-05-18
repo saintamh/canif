@@ -56,6 +56,7 @@ class Case(NamedTuple):
     input_text: str
     expected_parse: AstNode
     expected_pods: object = NotImplemented
+    expected_verb: str = NotImplemented
     expected_json: str = NotImplemented
 
 
@@ -66,24 +67,28 @@ ALL_TEST_CASES = [
         '42',
         expected_parse=[AST.int('42', 42)],
         expected_pods=42,
+        expected_verb='42',
         expected_json='42',
     ),
     Case(
         '3.14',
         expected_parse=[AST.float('3.14', 3.14)],
         expected_pods=3.14,
+        expected_verb='3.14',
         expected_json='3.14',
     ),
     Case(
         '5.12e-1',
         expected_parse=[AST.float('5.12e-1', 5.12e-1)],
         expected_pods=0.512,
-        expected_json='0.512',
+        expected_verb='5.12e-1',
+        expected_json='5.12e-1',
     ),
     Case(
         '5.12e-17',
         expected_parse=[AST.float('5.12e-17', 5.12e-17)],
         expected_pods=5.12e-17,
+        expected_verb='5.12e-17',
         expected_json='5.12e-17',
     ),
 
@@ -92,48 +97,56 @@ ALL_TEST_CASES = [
         'true',
         expected_parse=[AST.named_constant('true', True)],
         expected_pods=True,
+        expected_verb='true',
         expected_json='true',
     ),
     Case(
         'false',
         expected_parse=[AST.named_constant('false', False)],
         expected_pods=False,
+        expected_verb='false',
         expected_json='false',
     ),
     Case(
         'True',
         expected_parse=[AST.named_constant('True', True)],
         expected_pods=True,
+        expected_verb='True',
         expected_json='true',
     ),
     Case(
         'False',
         expected_parse=[AST.named_constant('False', False)],
         expected_pods=False,
+        expected_verb='False',
         expected_json='false',
     ),
     Case(
         'null',
         expected_parse=[AST.named_constant('null', None)],
         expected_pods=None,
+        expected_verb='null',
         expected_json='null',
     ),
     Case(
         'None',
         expected_parse=[AST.named_constant('None', None)],
         expected_pods=None,
+        expected_verb='None',
         expected_json='null',
     ),
     Case(
         'undefined',
         expected_parse=[AST.named_constant('undefined', '$undefined')],
         expected_pods='$undefined',
+        expected_verb='undefined',
         expected_json='"$undefined"',
     ),
     Case(
         'NotImplemented',
         expected_parse=[AST.named_constant('NotImplemented', NotImplemented)],
         expected_pods=NotImplemented,
+        expected_verb='NotImplemented',
         expected_json='"$NotImplemented"',
     ),
 
@@ -145,6 +158,7 @@ ALL_TEST_CASES = [
             AST.close_array(),
         ],
         expected_pods=[],
+        expected_verb='[]',
         expected_json='[]',
     ),
     Case(
@@ -156,6 +170,7 @@ ALL_TEST_CASES = [
             AST.close_array(),
         ],
         expected_pods=[1],
+        expected_verb='[1]',
         expected_json='[1]',
     ),
     Case(
@@ -167,6 +182,7 @@ ALL_TEST_CASES = [
             AST.close_array(),
         ],
         expected_pods=[1],
+        expected_verb='[1]',
         expected_json='[1]',
     ),
     Case(
@@ -195,6 +211,7 @@ ALL_TEST_CASES = [
             AST.close_array(),
         ],
         expected_pods=[1, ['a']],
+        expected_verb='[1, ["a"]]',
         expected_json='[1, ["a"]]',
     ),
 
@@ -206,6 +223,7 @@ ALL_TEST_CASES = [
             AST.close_array(),
         ],
         expected_pods=(),
+        expected_verb='()',
         expected_json='[]',
     ),
     Case(
@@ -217,6 +235,7 @@ ALL_TEST_CASES = [
             AST.close_array(),
         ],
         expected_pods=(1,),
+        expected_verb='(1,)',
         expected_json='[1]',
     ),
     Case(
@@ -250,6 +269,7 @@ ALL_TEST_CASES = [
             AST.close_array(),
         ],
         expected_pods=(1, ('a',)),
+        expected_verb='(1, ("a",))',
         expected_json='[1, ["a"]]',
     ),
 
@@ -261,6 +281,7 @@ ALL_TEST_CASES = [
             AST.close_mapping(),
         ],
         expected_pods={},
+        expected_verb='{}',
         expected_json='{}',
     ),
     Case(
@@ -274,6 +295,7 @@ ALL_TEST_CASES = [
             AST.close_mapping(),
         ],
         expected_pods={'a': 1},
+        expected_verb='{"a": 1}',
         expected_json='{"a": 1}',
     ),
     Case(
@@ -287,6 +309,7 @@ ALL_TEST_CASES = [
             AST.close_mapping(),
         ],
         expected_pods={'a': 1},
+        expected_verb='{"a": 1}',
         expected_json='{"a": 1}',
     ),
     Case(
@@ -308,6 +331,7 @@ ALL_TEST_CASES = [
             AST.close_mapping(),
         ],
         expected_pods={'a': 1},
+        expected_verb='{a: 1}',
         expected_json='{"a": 1}',
     ),
 
@@ -328,6 +352,7 @@ ALL_TEST_CASES = [
             AST.close_mapping(),
         ],
         expected_pods={(1, 2): 3},
+        expected_verb='{(1, 2): 3}',
         expected_json='{"$tuple[1, 2]": 3}',
     ),
     Case(
@@ -351,6 +376,7 @@ ALL_TEST_CASES = [
             AST.close_mapping(),
         ],
         expected_pods={(1, (2, '3')): 4},
+        expected_verb=r'{(1, (2, "3")): 4}',
         expected_json=r'{"$tuple[1, [2, \"3\"]]": 4}',
     ),
 
@@ -364,6 +390,7 @@ ALL_TEST_CASES = [
             AST.close_set(),
         ],
         expected_pods={1},
+        expected_verb='{1}',
         expected_json='{"$set": [1]}',
     ),
     Case(
@@ -375,6 +402,7 @@ ALL_TEST_CASES = [
             AST.close_set(),
         ],
         expected_pods={1},
+        expected_verb='{1}',
         expected_json='{"$set": [1]}',
     ),
     Case(
@@ -396,6 +424,7 @@ ALL_TEST_CASES = [
             AST.close_set(),
         ],
         expected_pods={1, 2},
+        expected_verb='{1, 2}',
         expected_json='{"$set": [1, 2]}',
     ),
 
@@ -406,6 +435,7 @@ ALL_TEST_CASES = [
         ''',
         expected_parse=[AST.string("'text'", 'text')],
         expected_pods='text',
+        expected_verb="'text'",
         expected_json='"text"',
     ),
     Case(
@@ -414,6 +444,7 @@ ALL_TEST_CASES = [
         ''',
         expected_parse=[AST.string(r"""'I "love\" this'""", 'I "love" this')],  # pylint: disable=invalid-triple-quote
         expected_pods='I "love" this',
+        expected_verb=r"""'I "love\" this'""",  # pylint: disable=invalid-triple-quote
         expected_json=r'"I \"love\" this"',
     ),
     Case(
@@ -422,6 +453,7 @@ ALL_TEST_CASES = [
         ''',
         expected_parse=[AST.string(r"""'It\'s Sam\'s hat'""", "It's Sam's hat")],  # pylint: disable=invalid-triple-quote
         expected_pods="It's Sam's hat",
+        expected_verb=r"'It\'s Sam\'s hat'",
         expected_json='"It\'s Sam\'s hat"',
     ),
     Case(
@@ -437,6 +469,7 @@ ALL_TEST_CASES = [
             ),
         ],
         expected_pods=' \\ " / \x08 \x0C \n \r \t Ф ~ \' ',
+        expected_verb=r"""' \\ \" \/ \b \f \n \r \t \u0424 \x7E \' '""",  # pylint: disable=invalid-triple-quote
         expected_json=r'''" \\ \" / \b \f \n \r \t Ф ~ ' "''',
     ),
 
@@ -447,6 +480,7 @@ ALL_TEST_CASES = [
         ''',
         expected_parse=[AST.string('"text"', 'text')],
         expected_pods='text',
+        expected_verb='"text"',
         expected_json='"text"',
     ),
     Case(
@@ -455,6 +489,7 @@ ALL_TEST_CASES = [
         ''',
         expected_parse=[AST.string(r'''"I \"love\" this"''', 'I "love" this')],
         expected_pods='I "love" this',
+        expected_verb=r'"I \"love\" this"',
         expected_json=r'"I \"love\" this"',
     ),
     Case(
@@ -463,6 +498,7 @@ ALL_TEST_CASES = [
         ''',
         expected_parse=[AST.string(r'''"It's Sam\'s hat"''', "It's Sam's hat")],
         expected_pods="It's Sam's hat",
+        expected_verb=r'''"It's Sam\'s hat"''',
         expected_json='"It\'s Sam\'s hat"',
     ),
     Case(
@@ -478,6 +514,7 @@ ALL_TEST_CASES = [
             ),
         ],
         expected_pods=' \\ " / \x08 \x0C \n \r \t Ф ~ \' ',
+        expected_verb=r'''" \\ \" \/ \b \f \n \r \t \u0424 \x7E \' "''',
         expected_json=r'''" \\ \" / \b \f \n \r \t Ф ~ ' "''',
     ),
 
@@ -488,6 +525,7 @@ ALL_TEST_CASES = [
         ''',
         expected_parse=[AST.int('36', 36)],
         expected_pods=36,
+        expected_verb='36',
         expected_json='36',
     ),
     Case(
@@ -497,6 +535,7 @@ ALL_TEST_CASES = [
         ''',
         expected_parse=[AST.string('"http://not.a.comment/"', 'http://not.a.comment/')],
         expected_pods='http://not.a.comment/',
+        expected_verb='"http://not.a.comment/"',
         expected_json='"http://not.a.comment/"',
     ),
 
@@ -505,18 +544,21 @@ ALL_TEST_CASES = [
         '<__main__.C object at 0x05b0ace99cf7>',
         expected_parse=[AST.python_repr('<__main__.C object at 0x05b0ace99cf7>')],
         expected_pods='$repr<__main__.C object at 0x05b0ace99cf7>',
+        expected_verb='<__main__.C object at 0x05b0ace99cf7>',
         expected_json='"$repr<__main__.C object at 0x05b0ace99cf7>"',
     ),
     Case(
         "<re.Match object; span=(0, 1), match='a'>",
         expected_parse=[AST.python_repr("<re.Match object; span=(0, 1), match='a'>")],
         expected_pods="$repr<re.Match object; span=(0, 1), match='a'>",
+        expected_verb="<re.Match object; span=(0, 1), match='a'>",
         expected_json='"$repr<re.Match object; span=(0, 1), match=\'a\'>"',
     ),
     Case(
         "<dummy match='<>'>",
         expected_parse=[AST.python_repr("<dummy match='<>'>")],
         expected_pods="$repr<dummy match='<>'>",
+        expected_verb="<dummy match='<>'>",
         expected_json='"$repr<dummy match=\'<>\'>"',
     ),
 
@@ -525,18 +567,21 @@ ALL_TEST_CASES = [
         'x',
         expected_parse=[AST.identifier('x')],
         expected_pods='$$x',
+        expected_verb='x',
         expected_json='"$$x"',
     ),
     Case(
         'x10',
         expected_parse=[AST.identifier('x10')],
         expected_pods='$$x10',
+        expected_verb='x10',
         expected_json='"$$x10"',
     ),
     Case(
         'μεταφορά',
         expected_parse=[AST.identifier('μεταφορά')],
         expected_pods='$$μεταφορά',
+        expected_verb='μεταφορά',
         expected_json='"$$μεταφορά"',
     ),
 
@@ -551,6 +596,7 @@ ALL_TEST_CASES = [
             AST.close_function_call(),
         ],
         expected_pods={'$$x': [1]},
+        expected_verb='x(1)',
         expected_json='{"$$x": [1]}',
     ),
     Case(
@@ -563,6 +609,7 @@ ALL_TEST_CASES = [
             AST.close_function_call(),
         ],
         expected_pods={'$$x': [1]},
+        expected_verb='x(1)',
         expected_json='{"$$x": [1]}',
     ),
     Case(
@@ -577,6 +624,7 @@ ALL_TEST_CASES = [
             AST.close_function_call(),
         ],
         expected_pods={'$$x': [1, 2]},
+        expected_verb='x(1, 2)',
         expected_json='{"$$x": [1, 2]}',
     ),
 
@@ -599,6 +647,7 @@ ALL_TEST_CASES = [
             AST.close_function_call(),
         ],
         expected_pods={'a': 1},
+        expected_verb='OrderedDict([("a", 1)])',
         expected_json='{"a": 1}',
     ),
     Case(
@@ -612,6 +661,7 @@ ALL_TEST_CASES = [
             AST.close_function_call(),
         ],
         expected_pods={'$date': '1970-09-12'},
+        expected_verb='Date("1970-09-12")',
         expected_json='{"$date": "1970-09-12"}',
     ),
     Case(
@@ -625,14 +675,15 @@ ALL_TEST_CASES = [
             AST.close_function_call(),
         ],
         expected_pods={'$oid': '1234'},
+        expected_verb='ObjectId("1234")',
         expected_json='{"$oid": "1234"}',
     ),
 ]
 
 
 @pytest.mark.parametrize(','.join(Case._fields), ALL_TEST_CASES)
-def test_parser(input_text, expected_parse, expected_pods, expected_json):
-    del expected_pods, expected_json  # not used in this test, pylint
+def test_parser(input_text, expected_parse, expected_pods, expected_verb, expected_json):
+    del expected_pods, expected_verb, expected_json  # not used in this test, pylint
     lexer = Lexer(input_text)
     mock_builder = AstClass()
     parser = Parser(lexer, mock_builder)
@@ -648,8 +699,8 @@ def test_parser(input_text, expected_parse, expected_pods, expected_json):
 
 
 @pytest.mark.parametrize(','.join(Case._fields), ALL_TEST_CASES)
-def test_pods(input_text, expected_parse, expected_pods, expected_json):
-    del expected_json  # not used in this test, pylint
+def test_pods(input_text, expected_parse, expected_pods, expected_verb, expected_json):
+    del expected_json, expected_verb  # not used in this test, pylint
     lexer = Lexer(input_text)
     builder = PodsBuilder()
     parser = Parser(lexer, builder)
@@ -666,8 +717,28 @@ def test_pods(input_text, expected_parse, expected_pods, expected_json):
 
 
 @pytest.mark.parametrize(','.join(Case._fields), ALL_TEST_CASES)
-def test_json_output(input_text, expected_parse, expected_pods, expected_json):
-    del expected_pods  # not used in this test, pylint
+def test_verb(input_text, expected_parse, expected_pods, expected_verb, expected_json):
+    del expected_pods, expected_json  # not used in this test, pylint
+    output_buffer = StringIO()
+    lexer = Lexer(input_text)
+    builder = PrettyPrintBuilder(output_buffer, indent=0)
+    parser = Parser(lexer, builder)
+    try:
+        parser.document()
+        actual_verb = output_buffer.getvalue()
+    except ParserError as actual_error:
+        if isinstance(expected_parse, ParserError):
+            assert str(actual_error) == str(expected_parse)
+        else:
+            raise
+    else:
+        assert not isinstance(expected_verb, ParserError)
+        assert actual_verb == expected_verb
+
+
+@pytest.mark.parametrize(','.join(Case._fields), ALL_TEST_CASES)
+def test_json_output(input_text, expected_parse, expected_pods, expected_verb, expected_json):
+    del expected_pods, expected_verb  # not used in this test, pylint
     output_buffer = StringIO()
     lexer = Lexer(input_text)
     builder = PrettyPrintBuilder(output_buffer, indent=0)
