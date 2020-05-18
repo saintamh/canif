@@ -139,6 +139,15 @@ ALL_TEST_CASES = [
 
     # Arrays
     Case(
+        '[]',
+        expected_parse=[
+            AST.open_array(list),
+            AST.close_array(),
+        ],
+        expected_pods=[],
+        expected_json='[]',
+    ),
+    Case(
         '[1]',
         expected_parse=[
             AST.open_array(list),
@@ -190,6 +199,15 @@ ALL_TEST_CASES = [
     ),
 
     # Tuples
+    Case(
+        '()',
+        expected_parse=[
+            AST.open_array(tuple),
+            AST.close_array(),
+        ],
+        expected_pods=(),
+        expected_json='[]',
+    ),
     Case(
         '(1,)',
         expected_parse=[
