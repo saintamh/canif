@@ -59,11 +59,11 @@ class FunctionCall:
         self.arguments.append(argument)
 
     def build(self):
-        operator = self.special.get(self.function_name[2:])
+        operator = self.special.get(self.function_name)
         if operator:
             return operator(self.arguments)
         else:
-            return {self.function_name: self.arguments}
+            return {Jsonify.identifier(self.function_name): self.arguments}
 
 
 class PodsBuilder(Builder):
@@ -158,8 +158,7 @@ class PodsBuilder(Builder):
     def close_set(self):
         self._close_collection()
 
-    def open_function_call(self):
-        function_name = self.stack.pop()
+    def open_function_call(self, function_name):
         function_call = FunctionCall(function_name)
         self.stack.append(function_call)
 

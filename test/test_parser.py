@@ -8,7 +8,7 @@ from typing import NamedTuple
 import pytest
 
 # canif
-from canif.builder import PodsBuilder, PrettyPrintBuilder
+from canif.builder import PodsBuilder, VerbatimPrinter
 from canif.lexer import Lexer
 from canif.parser import Parser, ParserError
 from canif.utils import undefined
@@ -590,8 +590,7 @@ ALL_TEST_CASES = [
     Case(
         'x(1)',
         expected_parse=[
-            AST.identifier('x'),
-            AST.open_function_call(),
+            AST.open_function_call('x'),
             AST.int('1', 1),
             AST.function_argument(),
             AST.close_function_call(),
@@ -603,8 +602,7 @@ ALL_TEST_CASES = [
     Case(
         'x(1,)',
         expected_parse=[
-            AST.identifier('x'),
-            AST.open_function_call(),
+            AST.open_function_call('x'),
             AST.int('1', 1),
             AST.function_argument(),
             AST.close_function_call(),
@@ -616,8 +614,7 @@ ALL_TEST_CASES = [
     Case(
         'x(1, 2)',
         expected_parse=[
-            AST.identifier('x'),
-            AST.open_function_call(),
+            AST.open_function_call('x'),
             AST.int('1', 1),
             AST.function_argument(),
             AST.int('2', 2),
@@ -633,8 +630,7 @@ ALL_TEST_CASES = [
     Case(
         'OrderedDict([("a", 1)])',
         expected_parse=[
-            AST.identifier('OrderedDict'),
-            AST.open_function_call(),
+            AST.open_function_call('OrderedDict'),
             AST.open_array(list),
             AST.open_array(tuple),
             AST.string('"a"', 'a'),
@@ -655,8 +651,7 @@ ALL_TEST_CASES = [
         # MongoDB BSON date objects
         'Date("1970-09-12")',
         expected_parse=[
-            AST.identifier('Date'),
-            AST.open_function_call(),
+            AST.open_function_call('Date'),
             AST.string('"1970-09-12"', '1970-09-12'),
             AST.function_argument(),
             AST.close_function_call(),
@@ -669,8 +664,7 @@ ALL_TEST_CASES = [
         # MongoDB BSON ObjectId objects
         'ObjectId("1234")',
         expected_parse=[
-            AST.identifier('ObjectId'),
-            AST.open_function_call(),
+            AST.open_function_call('ObjectId'),
             AST.string('"1234"', '1234'),
             AST.function_argument(),
             AST.close_function_call(),
@@ -722,7 +716,7 @@ def test_verb(input_text, expected_parse, expected_pods, expected_verb, expected
     del expected_pods, expected_json  # not used in this test, pylint
     output_buffer = StringIO()
     lexer = Lexer(input_text)
-    builder = PrettyPrintBuilder(output_buffer, indent=0)
+    builder = VerbatimPrinter(output_buffer, indent=0)
     parser = Parser(lexer, builder)
     try:
         parser.document()
@@ -742,7 +736,7 @@ def test_json_output(input_text, expected_parse, expected_pods, expected_verb, e
     del expected_pods, expected_verb  # not used in this test, pylint
     output_buffer = StringIO()
     lexer = Lexer(input_text)
-    builder = PrettyPrintBuilder(output_buffer, indent=0)
+    builder = JsonPrinter(output_buffer, indent=0)
     parser = Parser(lexer, builder)
     try:
         parser.document()

@@ -3,3 +3,4 @@
 from .base import Builder
 from .pods import PodsBuilder
 from .prettyprint import PrettyPrintBuilder
+from .verbatim import VerbatimPrinter

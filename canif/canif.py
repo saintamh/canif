@@ -9,7 +9,7 @@ import sys
 from traceback import print_exc
 
 # canif
-from .builder import PrettyPrintBuilder
+from .builder import VerbatimPrinter
 from .lexer import Lexer
 from .parser import Parser
 
@@ -58,7 +58,7 @@ def run(options, input_bytes):
         output_buffer = StringIO()
         try:
             lexer = Lexer(input_text)
-            builder = PrettyPrintBuilder(output_buffer, indent=options.indent, ensure_ascii=options.ensure_ascii)
+            builder = VerbatimPrinter(output_buffer, indent=options.indent, ensure_ascii=options.ensure_ascii)
             parser = Parser(lexer, builder)
             parser.document()
             output_text = output_buffer.getvalue()

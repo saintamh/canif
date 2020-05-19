@@ -75,7 +75,7 @@ class Builder:
     def close_set(self):
         raise NotImplementedError
 
-    def open_function_call(self):
+    def open_function_call(self, function_name):
         raise NotImplementedError
 
     def function_argument(self):

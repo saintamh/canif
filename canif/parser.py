@@ -272,8 +272,8 @@ class Parser:
     def function_call(self):
         match = self.lexer.pop(r'((?:new\s+)?\w+(?:\.\w+)*)\s*\(')
         if match:
-            self.builder.identifier(match.group(1))
-            self.builder.open_function_call()
+            function_name = match.group(1)
+            self.builder.open_function_call(function_name)
             self._comma_separated_list(
                 r'\)',
                 builder_callback=self.builder.function_argument,
