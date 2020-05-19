@@ -188,7 +188,7 @@ class Parser:
     def square_bracketed_array(self):
         if self.lexer.pop(r'\['):
             self.builder.open_array(list)
-            self._comma_separated_list(r'\]', self.builder.array_element)
+            self._comma_separated_list(r'\]', self.builder.array_element, allow_empty_slots=True)
             self.builder.close_array()
             return True
 
@@ -199,13 +199,17 @@ class Parser:
             self.builder.close_array()
             return True
 
-    def _comma_separated_list(self, re_end, builder_callback, needs_at_least_one_comma=False):
+    def _comma_separated_list(self, re_end, builder_callback, needs_at_least_one_comma=False, allow_empty_slots=False):
         num_elements = count(1)
         while not self.lexer.peek(re_end):
-            self.expression(checked=True)
-            builder_callback()
-            if not self.lexer.pop(r',', checked=(needs_at_least_one_comma and next(num_elements) == 1)):
-                break
+            if allow_empty_slots and self.lexer.pop(r','):
+                self.builder.array_empty_slot()
+                builder_callback()
+            else:
+                self.expression(checked=True)
+                builder_callback()
+                if not self.lexer.pop(r',', checked=(needs_at_least_one_comma and next(num_elements) == 1)):
+                    break
         self.lexer.pop(re_end, checked=True)
 
     def mapping_or_set(self, checked=False):

@@ -81,6 +81,9 @@ class StringablesAsJsonMixin:
     def python_repr(self, raw):
         self.string(raw, '$repr%s' % raw)
 
+    def array_empty_slot(self):
+        self.null(None)
+
 
 class FunctionCallsAsJsonMixin:
 

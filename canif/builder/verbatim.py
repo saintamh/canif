@@ -5,6 +5,7 @@ from .prettyprint import PrettyPrintBuilder
 
 
 class VerbatimPrinter(PrettyPrintBuilder):
+    # Those are from the superclass interface, pylint: disable=unused-argument
 
     def float(self, raw, value):
         self._print(raw)
@@ -32,6 +33,10 @@ class VerbatimPrinter(PrettyPrintBuilder):
 
     def identifier(self, name):
         self._print(name)
+
+    def array_empty_slot(self):
+        self.stack[-1][2] = 1
+        self._print('')
 
     def open_set(self):
         self._print('{')

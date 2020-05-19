@@ -1,6 +1,7 @@
 [MESSAGES CONTROL]
 
 disable=
+    inconsistent-return-statements,
     missing-docstring,
     too-many-public-methods,
 

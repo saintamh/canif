@@ -51,6 +51,9 @@ class Builder:
     def array_element(self):
         raise NotImplementedError
 
+    def array_empty_slot(self):
+        raise NotImplementedError
+
     def close_array(self):
         raise NotImplementedError
 
