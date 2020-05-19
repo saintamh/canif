@@ -9,7 +9,7 @@ import sys
 from traceback import print_exc
 
 # canif
-from .builder import VerbatimPrinter
+from .builder import JsonPrinter, VerbatimPrinter
 from .lexer import Lexer
 from .parser import Parser
 
@@ -20,15 +20,27 @@ def parse_command_line(
         default_output_encoding=sys.stdout.encoding
         ):
     parser = argparse.ArgumentParser(description='Pretty-print JSON and JSON-like data')
-    parser.add_argument(
+    indent_group = parser.add_mutually_exclusive_group()
+    indent_group.add_argument(
+        '-i',
         '--indent',
         type=int,
-        default=2,
+        default=4,
         help='Indentation level (0 means flattened, single-line output)',
     )
-    parser.add_argument(
-        '--json-output',
+    indent_group.add_argument(
+        '-f',
+        '--flatten',
         action='store_true',
+        help='Flatten output (equivalent to -i 0)',
+    )
+    parser.add_argument(
+        '-j',
+        '--json-output',
+        action='store_const',
+        dest='builder_class',
+        const=JsonPrinter,
+        default=VerbatimPrinter,
         help='Ensure output is valid JSON (e.g. None becomes null)',
     )
     parser.add_argument(
@@ -58,7 +70,11 @@ def run(options, input_bytes):
         output_buffer = StringIO()
         try:
             lexer = Lexer(input_text)
-            builder = VerbatimPrinter(output_buffer, indent=options.indent, ensure_ascii=options.ensure_ascii)
+            builder = options.builder_class(
+                output_buffer,
+                indent=0 if options.flatten else options.indent,
+                ensure_ascii=options.ensure_ascii,
+            )
             parser = Parser(lexer, builder)
             parser.document()
             output_text = output_buffer.getvalue()

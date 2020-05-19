@@ -1,0 +1,157 @@
+new L.U.Map("map", {
+"type": "Feature",
+"geometry": {
+"type": "Point",
+"coordinates": [
+15.661010742187502,
+41.58360681482734
+]
+},
+"properties": {
+"name": "Mappa senza nome",
+"zoom": 9,
+"easing": true,
+"licence": "",
+"miniMap": false,
+"slideshow": {},
+"tilelayer": {
+"tms": false,
+"name": "OSM-Fr",
+"maxZoom": 20,
+"minZoom": 0,
+"url_template": "//{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png"
+},
+"captionBar": false,
+"description": "",
+"limitBounds": {},
+"moreControl": true,
+"zoomControl": true,
+"embedControl": true,
+"scaleControl": true,
+"permissions": {
+"edit_status": 3,
+"share_status": 1,
+"owner": {
+"id": 50813,
+"name": "nickguglielmi08",
+"url": "/en/user/nickguglielmi08/"
+},
+"editors": []
+},
+"tilelayers": [
+{
+"id": 10,
+"name": "OSM-Fr",
+"url_template": "//{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png",
+"minZoom": 0,
+"maxZoom": 20,
+"attribution": "map data \u00a9 [[http://osm.org/copyright|OpenStreetMap contributors]] under ODbL ",
+"rank": 1,
+"tms": false,
+"selected": true
+},
+{
+"id": 1,
+"name": "OpenStreetMap",
+"url_template": "//{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+"minZoom": 0,
+"maxZoom": 19,
+"attribution": "map data \u00a9 [[http://osm.org/copyright|OpenStreetMap contributors]] under ODbL ",
+"rank": 2,
+"tms": false
+},
+{
+"id": 15,
+"name": "OSM Humanitarian (OSM-FR)",
+"url_template": "//{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png",
+"minZoom": 0,
+"maxZoom": 20,
+"attribution": "map data \u00a9 [[http://osm.org/copyright|OpenStreetMap contributors]] under ODbL  - Tiles \u00a9 HOT",
+"rank": 3,
+"tms": false
+}
+],
+}})
+
+$ canif
+new L.U.Map(
+    "map",
+    {
+        "type": "Feature",
+        "geometry": {
+            "type": "Point",
+            "coordinates": [
+                15.661010742187502,
+                41.58360681482734,
+            ],
+        },
+        "properties": {
+            "name": "Mappa senza nome",
+            "zoom": 9,
+            "easing": true,
+            "licence": "",
+            "miniMap": false,
+            "slideshow": {},
+            "tilelayer": {
+                "tms": false,
+                "name": "OSM-Fr",
+                "maxZoom": 20,
+                "minZoom": 0,
+                "url_template": "//{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png",
+            },
+            "captionBar": false,
+            "description": "",
+            "limitBounds": {},
+            "moreControl": true,
+            "zoomControl": true,
+            "embedControl": true,
+            "scaleControl": true,
+            "permissions": {
+                "edit_status": 3,
+                "share_status": 1,
+                "owner": {
+                    "id": 50813,
+                    "name": "nickguglielmi08",
+                    "url": "/en/user/nickguglielmi08/",
+                },
+                "editors": [],
+            },
+            "tilelayers": [
+                {
+                    "id": 10,
+                    "name": "OSM-Fr",
+                    "url_template": "//{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png",
+                    "minZoom": 0,
+                    "maxZoom": 20,
+                    "attribution": "map data \u00a9 [[http://osm.org/copyright|OpenStreetMap contributors]] under ODbL ",
+                    "rank": 1,
+                    "tms": false,
+                    "selected": true,
+                },
+                {
+                    "id": 1,
+                    "name": "OpenStreetMap",
+                    "url_template": "//{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+                    "minZoom": 0,
+                    "maxZoom": 19,
+                    "attribution": "map data \u00a9 [[http://osm.org/copyright|OpenStreetMap contributors]] under ODbL ",
+                    "rank": 2,
+                    "tms": false,
+                },
+                {
+                    "id": 15,
+                    "name": "OSM Humanitarian (OSM-FR)",
+                    "url_template": "//{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png",
+                    "minZoom": 0,
+                    "maxZoom": 20,
+                    "attribution": "map data \u00a9 [[http://osm.org/copyright|OpenStreetMap contributors]] under ODbL  - Tiles \u00a9 HOT",
+                    "rank": 3,
+                    "tms": false,
+                },
+            ],
+        },
+    },
+)
+
+$ canif -f
+new L.U.Map("map", {"type": "Feature", "geometry": {"type": "Point", "coordinates": [15.661010742187502, 41.58360681482734]}, "properties": {"name": "Mappa senza nome", "zoom": 9, "easing": true, "licence": "", "miniMap": false, "slideshow": {}, "tilelayer": {"tms": false, "name": "OSM-Fr", "maxZoom": 20, "minZoom": 0, "url_template": "//{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png"}, "captionBar": false, "description": "", "limitBounds": {}, "moreControl": true, "zoomControl": true, "embedControl": true, "scaleControl": true, "permissions": {"edit_status": 3, "share_status": 1, "owner": {"id": 50813, "name": "nickguglielmi08", "url": "/en/user/nickguglielmi08/"}, "editors": []}, "tilelayers": [{"id": 10, "name": "OSM-Fr", "url_template": "//{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png", "minZoom": 0, "maxZoom": 20, "attribution": "map data \u00a9 [[http://osm.org/copyright|OpenStreetMap contributors]] under ODbL ", "rank": 1, "tms": false, "selected": true}, {"id": 1, "name": "OpenStreetMap", "url_template": "//{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", "minZoom": 0, "maxZoom": 19, "attribution": "map data \u00a9 [[http://osm.org/copyright|OpenStreetMap contributors]] under ODbL ", "rank": 2, "tms": false}, {"id": 15, "name": "OSM Humanitarian (OSM-FR)", "url_template": "//{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png", "minZoom": 0, "maxZoom": 20, "attribution": "map data \u00a9 [[http://osm.org/copyright|OpenStreetMap contributors]] under ODbL  - Tiles \u00a9 HOT", "rank": 3, "tms": false}]}})
