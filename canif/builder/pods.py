@@ -2,7 +2,7 @@
 
 # canif
 from .base import Builder
-from ..jsonify import Jsonify
+from .jsonmixin import FunctionCallsAsJsonMixin, StringablesAsJsonMixin
 from ..utils import undefined
 
 
@@ -39,34 +39,7 @@ class Mapping:
         return self.items
 
 
-class FunctionCall:
-
-    special = {
-        # https://docs.mongodb.com/manual/reference/mongodb-extended-json/
-        #
-        # For both $date and $oid there should be a single argument, but don't silently swallow the rest of there are more
-        #
-        'Date': lambda values: {'$date': values[0] if len(values) == 1 else values},
-        'ObjectId': lambda values: {'$oid': values[0] if len(values) == 1 else values},
-        'OrderedDict': lambda values: dict(*values),
-    }
-
-    def __init__(self, function_name):
-        self.function_name = function_name
-        self.arguments = []
-
-    def append_argument(self, argument):
-        self.arguments.append(argument)
-
-    def build(self):
-        operator = self.special.get(self.function_name)
-        if operator:
-            return operator(self.arguments)
-        else:
-            return {Jsonify.identifier(self.function_name): self.arguments}
-
-
-class PodsBuilder(Builder):
+class PodsBuilder(StringablesAsJsonMixin, FunctionCallsAsJsonMixin, Builder):
     """
     A builder that assembles a Plain Old Data Structure (lists, dicts, strings) with the parsed data
     """
@@ -92,18 +65,6 @@ class PodsBuilder(Builder):
 
     def string(self, raw, value):
         self.stack.append(value)
-
-    def regex(self, raw, pattern, flags):
-        # See `Parser.regex_literal` for some reflections on why we don't represent the regex as a `re.Pattern` object
-        self.stack.append(Jsonify.regex(pattern, flags))
-
-    def python_repr(self, raw):
-        # We jsonify it so that we can tell it from a regular string
-        self.stack.append(Jsonify.python_repr(raw))
-
-    def identifier(self, name):
-        # We jsonify it so that we can tell it from a regular string
-        self.stack.append(Jsonify.identifier(name))
 
     def open_document(self):
         assert self.stack is NotImplemented, repr(self.stack)
@@ -156,16 +117,4 @@ class PodsBuilder(Builder):
         collection.append(element)
 
     def close_set(self):
-        self._close_collection()
-
-    def open_function_call(self, function_name):
-        function_call = FunctionCall(function_name)
-        self.stack.append(function_call)
-
-    def function_argument(self):
-        argument = self.stack.pop()
-        function_call = self.stack[-1]
-        function_call.append_argument(argument)
-
-    def close_function_call(self):
         self._close_collection()

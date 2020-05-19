@@ -3,14 +3,8 @@
 # standards
 from os import linesep
 
-# canif
-from .pods import PodsBuilder
 
-
-undefined = object()
-
-
-class PrettyPrintBuilder(PodsBuilder):
+class PrettyPrintBuilder:
     """
     A builder that assembles a pretty-printed output, and writes it out.
     """
@@ -55,33 +49,6 @@ class PrettyPrintBuilder(PodsBuilder):
         else:
             self.spacer = ',' + self._indent_string()
 
-    def float(self, raw, value):
-        self._print(raw)
-
-    def int(self, raw, value):
-        self._print(raw)
-
-    def bool(self, raw, value):
-        self._print(raw)
-
-    def null(self, raw):
-        self._print(raw)
-
-    def named_constant(self, raw, value):
-        self._print(raw)
-
-    def string(self, raw, value):
-        self._print(raw)
-
-    def regex(self, raw, pattern, flags):
-        self._print(raw)
-
-    def python_repr(self, raw):
-        self._print(raw)
-
-    def identifier(self, name):
-        self._print(name)
-
     def open_document(self):
         pass
 
@@ -89,7 +56,7 @@ class PrettyPrintBuilder(PodsBuilder):
         pass
 
     def open_array(self, kind):
-        self._print_array_opening(kind)
+        self._print({list: '[', tuple: '('}[kind])
         self.stack.append([kind, 0])
         self.spacer = self._indent_string()
 
@@ -103,15 +70,15 @@ class PrettyPrintBuilder(PodsBuilder):
             length,
             force_flat_comma=(kind is tuple and length == 1),
         )
-        self._print_array_closing(kind)
+        self._print({list: ']', tuple: ')'}[kind])
 
     def open_mapping(self):
-        self._print_mapping_opening()
+        self._print('{')
         self.stack.append(0)
         self.spacer = self._indent_string()
 
     def mapping_key(self):
-        self._print_mapping_colon()
+        self._print(': ')
 
     def mapping_value(self):
         self.stack[-1] += 1
@@ -120,59 +87,31 @@ class PrettyPrintBuilder(PodsBuilder):
     def close_mapping(self):
         length = self.stack.pop()
         self._end_comma_separated_sequence(length)
-        self._print_mapping_closing()
+        self._print('}')
 
-    def open_set(self):
-        self._print_set_opening()
-        self.stack.append(0)
-        self.spacer = self._indent_string()
-
-    def set_element(self):
-        self.spacer = ',' + self._indent_string()
-        self._comma_separator()
-
-    def close_set(self):
-        length = self.stack.pop()
-        self._end_comma_separated_sequence(length)
-        self._print_set_closing()
-
-    def open_function_call(self, function_name):
-        self._print_function_call_opening(function_name)
-        self.stack.append(0)
-        self.spacer = self._indent_string()
-
-    def function_argument(self):
-        self.stack[-1] += 1
-        self._comma_separator()
-
-    def close_function_call(self):
-        length = self.stack.pop()
-        self._end_comma_separated_sequence(length)
-        self._print_function_call_closing()
-
-    def _print_array_opening(self, kind):
+    def float(self, raw, value):
         raise NotImplementedError
 
-    def _print_array_closing(self, kind):
+    def int(self, raw, value):
         raise NotImplementedError
 
-    def _print_mapping_opening(self):
+    def bool(self, raw, value):
         raise NotImplementedError
 
-    def _print_mapping_colon(self):
+    def null(self, raw):
         raise NotImplementedError
 
-    def _print_mapping_closing(self):
+    def named_constant(self, raw, value):
         raise NotImplementedError
 
-    def _print_set_opening(self):
+    def string(self, raw, value):
         raise NotImplementedError
 
-    def _print_set_closing(self):
+    def regex(self, raw, pattern, flags):
         raise NotImplementedError
 
-    def _print_function_call_opening(self, function_name):
+    def python_repr(self, raw):
         raise NotImplementedError
 
-    def _print_function_call_closing(self):
+    def identifier(self, name):
         raise NotImplementedError
