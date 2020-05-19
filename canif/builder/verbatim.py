@@ -40,6 +40,7 @@ class VerbatimPrinter(PrettyPrintBuilder):
 
     def set_element(self):
         self.spacer = ',' + self._indent_string()
+        self.stack[-1] += 1
         self._comma_separator()
 
     def close_set(self):
