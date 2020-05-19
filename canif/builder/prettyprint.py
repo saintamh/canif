@@ -62,6 +62,12 @@ class PrettyPrintBuilder(PodsBuilder):
     def int(self, raw, value):
         self._print(raw)
 
+    def bool(self, raw, value):
+        self._print(raw)
+
+    def null(self, raw):
+        self._print(raw)
+
     def named_constant(self, raw, value):
         self._print(raw)
 

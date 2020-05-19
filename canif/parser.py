@@ -31,12 +31,6 @@ class Recorder:
 class Parser:
 
     named_constants = {
-        'true': True,
-        'True': True,
-        'false': False,
-        'False': False,
-        'null': None,
-        'None': None,
         'undefined': '$undefined',
         'NotImplemented': NotImplemented,
     }
@@ -77,6 +71,8 @@ class Parser:
             self.double_quoted_string,
             self.regex_literal,
             self.number,
+            self.bool,
+            self.null,
             self.named_constant,
             self.function_call,
             self.identifier,
@@ -87,11 +83,26 @@ class Parser:
     def number(self):
         match = self.lexer.pop(r'[\+\-]?\d+(?:\.\d+)?(?:[eE][\+\-]?\d+)?')
         if match:
-            text = match.group()
-            if re.search(r'[\.eE]', text):
-                self.builder.float(text, float(text))
+            raw = match.group()
+            if re.search(r'[\.eE]', raw):
+                self.builder.float(raw, float(raw))
             else:
-                self.builder.int(text, int(text))
+                self.builder.int(raw, int(raw))
+            return True
+
+    def bool(self):
+        match = self.lexer.pop(r'(?:[tT]rue|[fF]alse)\b')
+        if match:
+            raw = match.group()
+            value = raw[0].lower() == 't'
+            self.builder.bool(raw, value)
+            return True
+
+    def null(self):
+        match = self.lexer.pop(r'(?:null|None)\b')
+        if match:
+            raw = match.group()
+            self.builder.null(raw)
             return True
 
     def named_constant(self):

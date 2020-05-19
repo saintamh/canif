@@ -82,6 +82,12 @@ class PodsBuilder(Builder):
     def int(self, raw, value):
         self.stack.append(value)
 
+    def bool(self, raw, value):
+        self.stack.append(value)
+
+    def null(self, raw):
+        self.stack.append(None)
+
     def named_constant(self, raw, value):
         self.stack.append(value)
 

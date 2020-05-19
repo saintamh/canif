@@ -18,6 +18,12 @@ class Builder:
     def int(self, raw, value):
         raise NotImplementedError
 
+    def bool(self, raw, value):
+        raise NotImplementedError
+
+    def null(self, raw):
+        raise NotImplementedError
+
     def named_constant(self, raw, value):
         raise NotImplementedError
 
