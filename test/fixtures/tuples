@@ -7,6 +7,7 @@
     "nested+trail": (1, (2, (3, (4,),),),),
 }
 
+--
 $ canif -i 4
 {
     "empty": (),
@@ -47,6 +48,7 @@ $ canif -i 4
     ),
 }
 
+--
 $ canif -i 4 -j
 {
     "empty": [],

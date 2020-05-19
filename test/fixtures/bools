@@ -5,6 +5,7 @@
     "python_false": False,
 }
 
+--
 $ canif -i 4
 {
     "simple_true": true,
@@ -13,6 +14,7 @@ $ canif -i 4
     "python_false": False,
 }
 
+--
 $ canif -i 4 -j
 {
     "simple_true": true,

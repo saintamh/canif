@@ -26,7 +26,7 @@ def iter_test_cases():
     for input_file_path in glob(path.join(path.dirname(__file__), 'fixtures', '*')):
         file_name = path.basename(input_file_path)
         with open(input_file_path, 'rt', encoding='UTF-8') as file_in:
-            input_text, *all_output_sections = file_in.read().split('\n$ canif')
+            input_text, *all_output_sections = file_in.read().split('\n--\n$ canif')
         assert all_output_sections, input_file_path
         for section in all_output_sections:
             argv, expected_output_text = section.split('\n', 1)

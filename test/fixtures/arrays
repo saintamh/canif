@@ -13,6 +13,7 @@
     "length_4_2_empty_slots_at_end": [1,2,,,],
 }
 
+--
 $ canif -i 4
 {
     "empty": [],
@@ -86,6 +87,7 @@ $ canif -i 4
     ],
 }
 
+--
 $ canif -i 4 -j
 {
     "empty": [],

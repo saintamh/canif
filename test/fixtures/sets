@@ -7,6 +7,7 @@
     "nested+trail": {1, {2, {3},},},
 }
 
+--
 $ canif -i 4
 {
     "one": {
@@ -43,6 +44,7 @@ $ canif -i 4
     },
 }
 
+--
 $ canif -i 4 -j
 {
     "one": {
