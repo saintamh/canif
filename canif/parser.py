@@ -5,6 +5,9 @@ from contextlib import contextmanager
 from itertools import count
 import re
 
+# canif
+from .utils import undefined
+
 
 class ParserError(ValueError):
     pass
@@ -31,7 +34,7 @@ class Recorder:
 class Parser:
 
     named_constants = {
-        'undefined': '$undefined',
+        'undefined': undefined,
         'NotImplemented': NotImplemented,
     }
 
@@ -129,6 +132,9 @@ class Parser:
             return True
 
     def regex_literal(self):
+        # NB we could pass regex literals to `re.compile`, since that's their "parsed" form, but then that would open the door to
+        # syntax incompatibilities between Python's regex engine and whatever source we're reading from. That, and we couldn't save
+        # the "g" flag. So we save regexes as just a pair of (pattern, flags) strings.
         if self.lexer.peek(r'/'):
             match = self.lexer.pop(r'/((?:[^\\/]|\\.)*)/(\w*)', checked=True)
             raw = match.group()

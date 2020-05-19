@@ -11,6 +11,7 @@ import pytest
 from canif.builder import PodsBuilder, PrettyPrintBuilder
 from canif.lexer import Lexer
 from canif.parser import Parser, ParserError
+from canif.utils import undefined
 
 
 class AstNode(NamedTuple):
@@ -137,8 +138,8 @@ ALL_TEST_CASES = [
     ),
     Case(
         'undefined',
-        expected_parse=[AST.named_constant('undefined', '$undefined')],
-        expected_pods='$undefined',
+        expected_parse=[AST.named_constant('undefined', undefined)],
+        expected_pods=undefined,
         expected_verb='undefined',
         expected_json='"$undefined"',
     ),

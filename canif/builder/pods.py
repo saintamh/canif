@@ -2,9 +2,8 @@
 
 # canif
 from .base import Builder
-
-
-undefined = object()
+from ..jsonify import Jsonify
+from ..utils import undefined
 
 
 class Collection:
@@ -95,16 +94,16 @@ class PodsBuilder(Builder):
         self.stack.append(value)
 
     def regex(self, raw, pattern, flags):
-        parsed = {'$regex': pattern}
-        if flags:
-            parsed['$options'] = flags
-        self.stack.append(parsed)
+        # See `Parser.regex_literal` for some reflections on why we don't represent the regex as a `re.Pattern` object
+        self.stack.append(Jsonify.regex(pattern, flags))
 
     def python_repr(self, raw):
-        self.stack.append('$repr%s' % raw)
+        # We jsonify it so that we can tell it from a regular string
+        self.stack.append(Jsonify.python_repr(raw))
 
     def identifier(self, name):
-        self.stack.append('$$%s' % name)
+        # We jsonify it so that we can tell it from a regular string
+        self.stack.append(Jsonify.identifier(name))
 
     def open_document(self):
         assert self.stack is NotImplemented, repr(self.stack)
