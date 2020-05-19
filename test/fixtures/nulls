@@ -1,0 +1,16 @@
+{
+    "null": null,
+    "none": None,
+}
+
+$ canif -i 4
+{
+    "null": null,
+    "none": None,
+}
+
+$ canif -i 4 -j
+{
+    "null": null,
+    "none": null,
+}

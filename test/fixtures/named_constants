@@ -1,0 +1,16 @@
+{
+    "js_undefined": undefined,
+    "python_not_implemented": NotImplemented,
+}
+
+$ canif -i 4
+{
+    "js_undefined": undefined,
+    "python_not_implemented": NotImplemented,
+}
+
+$ canif -i 4 -j
+{
+    "js_undefined": "$undefined",
+    "python_not_implemented": "$NotImplemented",
+}

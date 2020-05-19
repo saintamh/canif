@@ -1,0 +1,22 @@
+{
+    "simple_true": true,
+    "simple_false": false,
+    "python_true": True,
+    "python_false": False,
+}
+
+$ canif -i 4
+{
+    "simple_true": true,
+    "simple_false": false,
+    "python_true": True,
+    "python_false": False,
+}
+
+$ canif -i 4 -j
+{
+    "simple_true": true,
+    "simple_false": false,
+    "python_true": true,
+    "python_false": false,
+}

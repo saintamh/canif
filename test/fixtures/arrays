@@ -1,0 +1,160 @@
+{
+    "empty": [],
+    "one": [1],
+    "one+trail": [1,],
+    "two": [1,2],
+    "two+trail": [1,2,],
+    "nested": [1,[2,[3,[4]]]],
+    "nested+trail": [1, [2, [3, [4,],],],],
+    "length_4_2_empty_slots_at_beginning": [1,,,4],
+    "length_4_2_empty_slots_at_beginning+trail": [1,,,4,],
+    "length_4_2_empty_slots_in_middle": [1,,,4],
+    "length_4_2_empty_slots_in_middle+trail": [1,,,4,],
+    "length_4_2_empty_slots_at_end": [1,2,,,],
+}
+
+$ canif -i 4
+{
+    "empty": [],
+    "one": [
+        1,
+    ],
+    "one+trail": [
+        1,
+    ],
+    "two": [
+        1,
+        2,
+    ],
+    "two+trail": [
+        1,
+        2,
+    ],
+    "nested": [
+        1,
+        [
+            2,
+            [
+                3,
+                [
+                    4,
+                ],
+            ],
+        ],
+    ],
+    "nested+trail": [
+        1,
+        [
+            2,
+            [
+                3,
+                [
+                    4,
+                ],
+            ],
+        ],
+    ],
+    "length_4_2_empty_slots_at_beginning": [
+        1,
+        ,
+        ,
+        4,
+    ],
+    "length_4_2_empty_slots_at_beginning+trail": [
+        1,
+        ,
+        ,
+        4,
+    ],
+    "length_4_2_empty_slots_in_middle": [
+        1,
+        ,
+        ,
+        4,
+    ],
+    "length_4_2_empty_slots_in_middle+trail": [
+        1,
+        ,
+        ,
+        4,
+    ],
+    "length_4_2_empty_slots_at_end": [
+        1,
+        2,
+        ,
+        ,
+    ],
+}
+
+$ canif -i 4 -j
+{
+    "empty": [],
+    "one": [
+        1,
+    ],
+    "one+trail": [
+        1,
+    ],
+    "two": [
+        1,
+        2,
+    ],
+    "two+trail": [
+        1,
+        2,
+    ],
+    "nested": [
+        1,
+        [
+            2,
+            [
+                3,
+                [
+                    4,
+                ],
+            ],
+        ],
+    ],
+    "nested+trail": [
+        1,
+        [
+            2,
+            [
+                3,
+                [
+                    4,
+                ],
+            ],
+        ],
+    ],
+    "length_4_2_empty_slots_at_beginning": [
+        1,
+        null,
+        null,
+        4,
+    ],
+    "length_4_2_empty_slots_at_beginning+trail": [
+        1,
+        null,
+        null,
+        4,
+    ],
+    "length_4_2_empty_slots_in_middle": [
+        1,
+        null,
+        null,
+        4,
+    ],
+    "length_4_2_empty_slots_in_middle+trail": [
+        1,
+        null,
+        null,
+        4,
+    ],
+    "length_4_2_empty_slots_at_end": [
+        1,
+        2,
+        null,
+        null,
+    ],
+}

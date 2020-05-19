@@ -1,0 +1,21 @@
+{
+    "simple": myfunc("a1", "a2"),
+}
+
+$ canif -i 4
+{
+    "simple": myfunc(
+        "a1",
+        "a2",
+    ),
+}
+
+$ canif -i 4 -j
+{
+    "simple": {
+        "$$myfunc": [
+            "a1",
+            "a2",
+        ],
+    },
+}

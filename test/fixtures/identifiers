@@ -1,0 +1,16 @@
+{
+    "simple": x,
+    "dollar": $x,
+}
+
+$ canif -i 4
+{
+    "simple": x,
+    "dollar": $x,
+}
+
+$ canif -i 4 -j
+{
+    "simple": "$$x",
+    "dollar": "$$$x",
+}
