@@ -188,15 +188,15 @@ ALL_TEST_CASES = [
     ),
     Case(
         '[,]',
-        expected_parse=ParserError("Expected expression, found ',]'"),
+        expected_parse=ParserError("Position 1: expected expression, found ',]'"),
     ),
     Case(
         '[1,,]',
-        expected_parse=ParserError("Expected expression, found ',]'"),
+        expected_parse=ParserError("Position 3: expected expression, found ',]'"),
     ),
     Case(
         '[,1]',
-        expected_parse=ParserError("Expected expression, found ',1]'"),
+        expected_parse=ParserError("Position 1: expected expression, found ',1]'"),
     ),
     Case(
         '[1, ["a"]]',
@@ -241,20 +241,20 @@ ALL_TEST_CASES = [
     ),
     Case(
         '(1)',
-        expected_parse=ParserError("Expected /,/, found ')'"),
+        expected_parse=ParserError("Position 2: expected /,/, found ')'"),
         expected_pods=[1],
     ),
     Case(
         '(,)',
-        expected_parse=ParserError("Expected expression, found ',)'"),
+        expected_parse=ParserError("Position 1: expected expression, found ',)'"),
     ),
     Case(
         '(1,,)',
-        expected_parse=ParserError("Expected expression, found ',)'"),
+        expected_parse=ParserError("Position 3: expected expression, found ',)'"),
     ),
     Case(
         '(,1)',
-        expected_parse=ParserError("Expected expression, found ',1)'"),
+        expected_parse=ParserError("Position 1: expected expression, found ',1)'"),
     ),
     Case(
         '(1, ("a",))',
@@ -315,11 +315,11 @@ ALL_TEST_CASES = [
     ),
     Case(
         '{"a": 1,,}',
-        expected_parse=ParserError("Expected key, found ',}'"),
+        expected_parse=ParserError("Position 8: expected key, found ',}'"),
     ),
     Case(
         '{,"a": 1}',
-        expected_parse=ParserError('Expected key, found \',"a": 1}\''),
+        expected_parse=ParserError('Position 1: expected key, found \',"a": 1}\''),
     ),
     Case(
         '{a: 1}',
@@ -408,11 +408,11 @@ ALL_TEST_CASES = [
     ),
     Case(
         '{1,,}',
-        expected_parse=ParserError("Expected expression, found ',}'"),
+        expected_parse=ParserError("Position 3: expected expression, found ',}'"),
     ),
     Case(
         '{,1}',
-        expected_parse=ParserError("Expected key, found ',1}'"),
+        expected_parse=ParserError("Position 1: expected key, found ',1}'"),
     ),
     Case(
         '{1, 2}',

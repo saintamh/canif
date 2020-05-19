@@ -35,7 +35,11 @@ class Lexer:
         """
         if not isinstance(expected, str):
             expected = '/%s/' % expected.pattern
-        raise ParserError('Expected %s, found %r' % (expected, self.text[self.position : self.position + 30]))
+        raise ParserError('Position %d: expected %s, found %r' % (
+            self.position,
+            expected,
+            self.text[self.position : self.position + 30],
+        ))
 
     def pop(self, regex, checked=False, do_skip=True):
         """
