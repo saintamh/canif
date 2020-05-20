@@ -713,7 +713,7 @@ def test_parser(input_text, expected_parse, expected_pods, expected_verb, expect
     mock_builder = AstClass()
     parser = Parser(lexer, mock_builder)
     try:
-        actual_parse = parser.document()
+        actual_parse = parser.document(include_single_values=True)
     except ParserError as actual_error:
         if isinstance(expected_parse, ParserError):
             assert str(actual_error) == str(expected_parse)
@@ -730,7 +730,7 @@ def test_pods(input_text, expected_parse, expected_pods, expected_verb, expected
     builder = PodsBuilder()
     parser = Parser(lexer, builder)
     try:
-        actual_pods = parser.document()
+        actual_pods = parser.document(include_single_values=True)
     except ParserError as actual_error:
         if isinstance(expected_parse, ParserError):
             assert str(actual_error) == str(expected_parse)
@@ -749,7 +749,7 @@ def test_verb(input_text, expected_parse, expected_pods, expected_verb, expected
     builder = VerbatimPrinter(output_buffer, indent=0)
     parser = Parser(lexer, builder)
     try:
-        parser.document()
+        parser.document(include_single_values=True)
         actual_verb = output_buffer.getvalue().rstrip()
     except ParserError as actual_error:
         if isinstance(expected_parse, ParserError):
@@ -769,7 +769,7 @@ def test_json_output(input_text, expected_parse, expected_pods, expected_verb, e
     builder = JsonPrinter(output_buffer, indent=0)
     parser = Parser(lexer, builder)
     try:
-        parser.document()
+        parser.document(include_single_values=True)
         actual_json = output_buffer.getvalue().rstrip()
     except ParserError as actual_error:
         if isinstance(expected_parse, ParserError):

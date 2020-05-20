@@ -2,6 +2,7 @@
 
 # standards
 import argparse
+from os import linesep
 import sys
 from traceback import print_exc
 
@@ -58,11 +59,11 @@ def parse_command_line(
     return parser.parse_args(argv[1:])
 
 
-def run(options, input_bytes):
+def run(options, input_bytes, output=sys.stdout):
     input_text = input_bytes.decode(options.input_encoding)
     lexer = Lexer(input_text)
     builder = options.builder_class(
-        sys.stdout,
+        output,
         indent=0 if options.flatten else options.indent,
         ensure_ascii=options.ensure_ascii,
     )
@@ -70,10 +71,11 @@ def run(options, input_bytes):
     try:
         while not lexer.peek(r'$'):
             parser.document()
+            output.write(linesep)
         return 0
     except Exception:  # anything at all, pylint: disable=broad-except
         builder.flush()  # finish printing the parsed tokens
-        lexer.flush(sys.stdout)  # then print the unparsed input
+        lexer.flush(output)  # then print the unparsed input
         print_exc()
         return 1
 

@@ -50,7 +50,7 @@ class PrettyPrintBuilder:
         pass
 
     def close_document(self):
-        self._print('\n')
+        pass
 
     def open_array(self, kind):
         self._print({list: '[', tuple: '('}[kind])
@@ -91,4 +91,5 @@ class PrettyPrintBuilder:
         self._print('}')
 
     def flush(self):
-        self._print('')
+        if self.spacer:
+            self.output.write(self.spacer.rstrip())

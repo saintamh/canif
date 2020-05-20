@@ -47,8 +47,10 @@ class Parser:
         previous_builder = self.builder  # NB could be nested so this could be another Recorder
         recorder = Recorder(previous_builder)
         self.builder = recorder
-        yield recorder
-        self.builder = previous_builder
+        try:
+            yield recorder
+        finally:
+            self.builder = previous_builder
 
     def _one_of(self, *functions, expected=None):
         for function in functions:
@@ -59,9 +61,18 @@ class Parser:
             self.lexer.error(expected)
         return False
 
-    def document(self):
+    def document(self, include_single_values=False):
         self.builder.open_document()
-        self.expression(checked=True)
+        if include_single_values:
+            self.expression()
+        else:
+            self._one_of(
+                self.square_bracketed_array,
+                self.round_bracketed_array,
+                self.mapping_or_set,
+                self.function_call,
+                expected='document',
+            )
         return self.builder.close_document()
 
     def expression(self, checked=False):
@@ -206,7 +217,8 @@ class Parser:
                 builder_callback()
             else:
                 self.expression(checked=True)
-                builder_callback()
+                if self.lexer.peek(r',') or self.lexer.peek(re_end):
+                    builder_callback()
                 if not self.lexer.pop(r',', checked=(needs_at_least_one_comma and next(num_elements) == 1)):
                     break
         self.lexer.pop(re_end, checked=True)
@@ -218,11 +230,17 @@ class Parser:
                 self.builder.open_mapping()
                 self.builder.close_mapping()
             else:
-                with self.record_builder_calls() as recorder:
-                    have_possible_set_element = self._one_of(
-                        self.mapping_key,
-                        self.expression,
-                    )
+                try:
+                    with self.record_builder_calls() as recorder:
+                        have_possible_set_element = self._one_of(
+                            self.mapping_key,
+                            self.expression,
+                        )
+                except ParserError:
+                    # make sure we print back out everything we've consumed
+                    self.builder.open_mapping()
+                    recorder.playback()
+                    raise
                 if have_possible_set_element and (self.lexer.pop(r',') or self.lexer.peek(r'\}')):
                     self._continue_as_set(recorder)
                 else:
@@ -247,18 +265,19 @@ class Parser:
         self.lexer.pop(r':', checked=True)
         self.builder.mapping_key()
         self.expression(checked=True)
-        have_comma = self.lexer.pop(r',')
-        self.builder.mapping_value()
-        if have_comma:
+        if self.lexer.pop(r','):
+            self.builder.mapping_value()
             while not self.lexer.peek(r'\}'):
                 self.mapping_key(checked=True)
                 self.lexer.pop(r':', checked=True)
                 self.builder.mapping_key()
                 self.expression(checked=True)
-                have_comma = self.lexer.pop(r',')
-                self.builder.mapping_value()
-                if not have_comma:
+                if self.lexer.peek(r',') or self.lexer.peek(r'\}'):
+                    self.builder.mapping_value()
+                if not self.lexer.pop(r','):
                     break
+        elif self.lexer.peek(r'\}'):
+            self.builder.mapping_value()
         self.lexer.pop(r'\}', checked=True)
         self.builder.close_mapping()
 

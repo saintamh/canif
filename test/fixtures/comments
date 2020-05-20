@@ -1,0 +1,18 @@
+{
+    "int": 36, // thirty-six
+    "url": "http://thirty.six/",
+}
+
+--
+$ canif -i 4
+{
+    "int": 36,
+    "url": "http://thirty.six/",
+}
+
+--
+$ canif -i 4 -j
+{
+    "int": 36,
+    "url": "http://thirty.six/",
+}
