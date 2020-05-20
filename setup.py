@@ -14,7 +14,7 @@ setuptools.setup(
     version='0.1.0',
     author='Hervé Saint-Amand',
     author_email='canif@saintamh.org',
-    description='Parser and pretty-printer for JSON and JSON-like data',
+    description='Parser and pretty-printer for JSON and JSON-ish data',
     long_description=long_description,
     long_description_content_type='text/markdown',
     url='https://github.com/saintamh/canif/',
