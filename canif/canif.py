@@ -7,7 +7,7 @@ import sys
 from traceback import print_exc
 
 # canif
-from .builder import JsonPrinter, VerbatimPrinter
+from .builder import JsonPrinter, PodsBuilder, VerbatimPrinter
 from .lexer import Lexer
 from .parser import Parser
 
@@ -57,6 +57,18 @@ def parse_command_line(
         help='Character set used for encoding the output',
     )
     return parser.parse_args(argv[1:])
+
+
+def load(file):
+    return loads(file.read())
+
+
+def loads(text):
+    lexer = Lexer(text)
+    parser = Parser(lexer, PodsBuilder())
+    document = parser.document()
+    lexer.pop(r'$', checked=True)
+    return document
 
 
 def run(options, input_bytes, output=sys.stdout):
