@@ -14,5 +14,5 @@ $ canif -i 4
 $ canif -i 4 -j
 {
     "js_undefined": "$undefined",
-    "python_not_implemented": "$NotImplemented",
+    "python_not_implemented": "$NotImplemented"
 }

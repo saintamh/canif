@@ -14,5 +14,5 @@ $ canif -i 4
 $ canif -i 4 -j
 {
     "p2 regex": "$repr<_sre.SRE_Match object at 0x7f54185678b8>",
-    "p3 regex": "$repr<_sre.SRE_Match object; span=(0, 1), match='a'>",
+    "p3 regex": "$repr<_sre.SRE_Match object; span=(0, 1), match='a'>"
 }

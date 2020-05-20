@@ -17,5 +17,5 @@ $ canif -i 4 -j
 {
     "int": 36,
     "float": 3.14,
-    "e-notation-float": 1.89e-17,
+    "e-notation-float": 1.89e-17
 }

@@ -92,18 +92,18 @@ $ canif -i 4 -j
 {
     "empty": [],
     "one": [
-        1,
+        1
     ],
     "one+trail": [
-        1,
+        1
     ],
     "two": [
         1,
-        2,
+        2
     ],
     "two+trail": [
         1,
-        2,
+        2
     ],
     "nested": [
         1,
@@ -112,10 +112,10 @@ $ canif -i 4 -j
             [
                 3,
                 [
-                    4,
-                ],
-            ],
-        ],
+                    4
+                ]
+            ]
+        ]
     ],
     "nested+trail": [
         1,
@@ -124,39 +124,39 @@ $ canif -i 4 -j
             [
                 3,
                 [
-                    4,
-                ],
-            ],
-        ],
+                    4
+                ]
+            ]
+        ]
     ],
     "length_4_2_empty_slots_at_beginning": [
         1,
         null,
         null,
-        4,
+        4
     ],
     "length_4_2_empty_slots_at_beginning+trail": [
         1,
         null,
         null,
-        4,
+        4
     ],
     "length_4_2_empty_slots_in_middle": [
         1,
         null,
         null,
-        4,
+        4
     ],
     "length_4_2_empty_slots_in_middle+trail": [
         1,
         null,
         null,
-        4,
+        4
     ],
     "length_4_2_empty_slots_at_end": [
         1,
         2,
         null,
-        null,
-    ],
+        null
+    ]
 }

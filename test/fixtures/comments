@@ -14,5 +14,5 @@ $ canif -i 4
 $ canif -i 4 -j
 {
     "int": 36,
-    "url": "http://thirty.six/",
+    "url": "http://thirty.six/"
 }

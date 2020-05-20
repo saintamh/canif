@@ -20,5 +20,5 @@ $ canif -i 4 -j
     "simple_true": true,
     "simple_false": false,
     "python_true": true,
-    "python_false": false,
+    "python_false": false
 }

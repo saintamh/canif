@@ -9,6 +9,8 @@ class PrettyPrintBuilder:
     A builder that assembles a pretty-printed output, and writes it out.
     """
 
+    trailing_commas = True
+
     def __init__(self, output, indent=4, ensure_ascii=False):
         """
         The pretty-printed output will be written to `output`, which should be a writable, text-mode file.
@@ -44,7 +46,7 @@ class PrettyPrintBuilder:
         elif length == 0:
             self.spacer = ''
         else:
-            self.spacer = ',' + self._indent_string()
+            self.spacer = (',' if self.trailing_commas else '') + self._indent_string()
 
     def open_document(self):
         pass
