@@ -62,7 +62,6 @@ class Parser:
     def document(self):
         self.builder.open_document()
         self.expression(checked=True)
-        self.lexer.pop(r'$', checked=True)
         return self.builder.close_document()
 
     def expression(self, checked=False):

@@ -2,9 +2,6 @@
 
 # standards
 import argparse
-from io import StringIO
-from os import linesep
-import re
 import sys
 from traceback import print_exc
 
@@ -62,38 +59,29 @@ def parse_command_line(
 
 
 def run(options, input_bytes):
-    exit_status = 0
     input_text = input_bytes.decode(options.input_encoding)
-    if not input_text.strip():
-        output_text = ''
-    else:
-        output_buffer = StringIO()
-        try:
-            lexer = Lexer(input_text)
-            builder = options.builder_class(
-                output_buffer,
-                indent=0 if options.flatten else options.indent,
-                ensure_ascii=options.ensure_ascii,
-            )
-            parser = Parser(lexer, builder)
+    lexer = Lexer(input_text)
+    builder = options.builder_class(
+        sys.stdout,
+        indent=0 if options.flatten else options.indent,
+        ensure_ascii=options.ensure_ascii,
+    )
+    parser = Parser(lexer, builder)
+    try:
+        while not lexer.peek(r'$'):
             parser.document()
-            output_text = output_buffer.getvalue()
-        except Exception:  # anything at all, pylint: disable=broad-except
-            print_exc()
-            output_text = input_text
-            exit_status = 1
-        if output_text:
-            output_text = re.sub(r'\s+$', '', output_text, flags=re.MULTILINE) + linesep
-    output_bytes = output_text.encode(options.output_encoding)
-    return exit_status, output_bytes
+        return 0
+    except Exception:  # anything at all, pylint: disable=broad-except
+        builder.flush()  # finish printing the parsed tokens
+        lexer.flush(sys.stdout)  # then print the unparsed input
+        print_exc()
+        return 1
 
 
 def main():
     options = parse_command_line(sys.argv)
     input_bytes = sys.stdin.buffer.read()
-    exit_status, output_bytes = run(options, input_bytes)
-    if output_bytes:
-        sys.stdout.buffer.write(output_bytes)
+    exit_status = run(options, input_bytes)
     sys.exit(exit_status)
 
 

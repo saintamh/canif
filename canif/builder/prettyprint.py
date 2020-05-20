@@ -50,7 +50,7 @@ class PrettyPrintBuilder:
         pass
 
     def close_document(self):
-        pass
+        self._print('\n')
 
     def open_array(self, kind):
         self._print({list: '[', tuple: '('}[kind])
@@ -89,3 +89,6 @@ class PrettyPrintBuilder:
         length = self.stack.pop()
         self._end_comma_separated_sequence(length)
         self._print('}')
+
+    def flush(self):
+        self._print('')

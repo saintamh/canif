@@ -750,7 +750,7 @@ def test_verb(input_text, expected_parse, expected_pods, expected_verb, expected
     parser = Parser(lexer, builder)
     try:
         parser.document()
-        actual_verb = output_buffer.getvalue()
+        actual_verb = output_buffer.getvalue().rstrip()
     except ParserError as actual_error:
         if isinstance(expected_parse, ParserError):
             assert str(actual_error) == str(expected_parse)
@@ -770,7 +770,7 @@ def test_json_output(input_text, expected_parse, expected_pods, expected_verb, e
     parser = Parser(lexer, builder)
     try:
         parser.document()
-        actual_json = output_buffer.getvalue()
+        actual_json = output_buffer.getvalue().rstrip()
     except ParserError as actual_error:
         if isinstance(expected_parse, ParserError):
             assert str(actual_error) == str(expected_parse)

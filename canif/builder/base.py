@@ -86,3 +86,6 @@ class Builder:
 
     def close_function_call(self):
         raise NotImplementedError
+
+    def flush(self):
+        raise NotImplementedError

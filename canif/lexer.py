@@ -67,3 +67,6 @@ class Lexer:
         """
         regex = re.compile(regex)
         return regex.match(self.text, self.position)
+
+    def flush(self, file_out):
+        file_out.write(self.text[self.position:])

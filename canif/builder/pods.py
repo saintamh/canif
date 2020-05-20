@@ -118,3 +118,6 @@ class PodsBuilder(StringablesAsJsonMixin, FunctionCallsAsJsonMixin, Builder):
 
     def close_set(self):
         self._close_collection()
+
+    def flush(self):
+        pass  # we don't print out anything
