@@ -5,7 +5,7 @@ from glob import glob
 from os import path
 import re
 import shlex
-from subprocess import check_output, run
+from subprocess import PIPE, check_output, run
 from typing import List, NamedTuple
 
 # 3rd parties
@@ -91,7 +91,8 @@ def test_recovery(test, position):
     result = run(
         test.argv,
         input=input_text,
-        capture_output=True,
+        stdout=PIPE,
+        stderr=PIPE,
         encoding='UTF-8',
         check=False,
     )
