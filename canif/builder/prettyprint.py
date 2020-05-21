@@ -9,9 +9,7 @@ class PrettyPrintBuilder:
     A builder that assembles a pretty-printed output, and writes it out.
     """
 
-    trailing_commas = True
-
-    def __init__(self, output, indent=4, ensure_ascii=False):
+    def __init__(self, output, indent=4, ensure_ascii=False, trailing_commas=True):
         """
         The pretty-printed output will be written to `output`, which should be a writable, text-mode file.
         """
@@ -19,6 +17,7 @@ class PrettyPrintBuilder:
         self.output = output
         self.indent = indent
         self.ensure_ascii = ensure_ascii
+        self.trailing_commas = trailing_commas
         self.stack = []
         self.spacer = None
 
@@ -40,13 +39,13 @@ class PrettyPrintBuilder:
         else:
             self.spacer = ', '
 
-    def _end_comma_separated_sequence(self, length, force_flat_comma=False):
+    def _end_comma_separated_sequence(self, length, force_comma=False):
         if self.indent == 0:
-            self.spacer = ',' if force_flat_comma else ''
+            self.spacer = ',' if force_comma else ''
         elif length == 0:
             self.spacer = ''
         else:
-            self.spacer = (',' if self.trailing_commas else '') + self._indent_string()
+            self.spacer = (',' if force_comma or self.trailing_commas else '') + self._indent_string()
 
     def open_document(self):
         pass
@@ -68,7 +67,7 @@ class PrettyPrintBuilder:
         kind, length, count_since_empty_slot = self.stack.pop()
         self._end_comma_separated_sequence(
             length,
-            force_flat_comma=(
+            force_comma=(
                 count_since_empty_slot == 0  # array ends in empty slot
                 or (kind is tuple and length == 1)
             ),

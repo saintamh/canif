@@ -12,7 +12,9 @@ class JsonPrinter(
         PrettyPrintBuilder,
         ):
 
-    trailing_commas = False
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.trailing_commas = False
 
     def _raw_json(self, json_str):
         self._print(json_str)

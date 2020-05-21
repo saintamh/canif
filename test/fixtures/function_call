@@ -23,3 +23,13 @@ $ canif -i 4 -j
         ]
     }
 }
+
+--
+$ canif -i 4 --no-trailing-commas
+{
+    "simple": myfunc(
+        "a1",
+        null,
+        "a2"
+    )
+}

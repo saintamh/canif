@@ -42,6 +42,14 @@ def parse_command_line(
         help='Ensure output is valid JSON (e.g. None becomes null)',
     )
     parser.add_argument(
+        '-T',
+        '--no-trailing-commas',
+        action='store_false',
+        dest='trailing_commas',
+        default=True,
+        help="Don't insert trailing commas after the last item in a sequence. This is implied by --json-output.",
+    )
+    parser.add_argument(
         '--ensure-ascii',
         action='store_true',
         help=r'Ensure JSON output is ASCII by using \uXXXX sequences in place of non-ASCII characters',
