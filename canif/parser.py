@@ -102,7 +102,7 @@ class Parser:
         )
 
     def number(self):
-        match = self.lexer.pop(r'[\+\-]?\d+(?:\.\d+)?(?:[eE][\+\-]?\d+)?')
+        match = self.lexer.pop_regex(r'[\+\-]?\d+(?:\.\d+)?(?:[eE][\+\-]?\d+)?')
         if match:
             raw = match.group()
             if re.search(r'[\.eE]', raw):
@@ -112,7 +112,7 @@ class Parser:
             return True
 
     def bool(self):
-        match = self.lexer.pop(r'(?:[tT]rue|[fF]alse)\b')
+        match = self.lexer.pop_regex(r'(?:[tT]rue|[fF]alse)\b')
         if match:
             raw = match.group()
             value = raw[0].lower() == 't'
@@ -120,30 +120,30 @@ class Parser:
             return True
 
     def null(self):
-        match = self.lexer.pop(r'(?:null|None)\b')
+        match = self.lexer.pop_regex(r'(?:null|None)\b')
         if match:
             raw = match.group()
             self.builder.null(raw)
             return True
 
     def named_constant(self):
-        match = self.lexer.pop(r'|'.join(self.named_constants))
+        match = self.lexer.pop_regex(r'|'.join(self.named_constants))
         if match:
             raw = match.group()
             self.builder.named_constant(raw, self.named_constants[raw])
             return True
 
     def single_quoted_string(self):
-        if self.lexer.peek(r"'"):
-            match = self.lexer.pop(r"\'((?:[^\\\']|\\.)*)\'", checked=True)
+        if self.lexer.peek_regex(r"'"):
+            match = self.lexer.pop_regex(r"\'((?:[^\\\']|\\.)*)\'", checked=True)
             raw = match.group()
             value = self._parse_string_escapes(match.group(1))
             self.builder.string(raw, value)
             return True
 
     def double_quoted_string(self):
-        if self.lexer.peek(r'"'):
-            match = self.lexer.pop(r'\"((?:[^\\\"]|\\.)*)\"', checked=True)
+        if self.lexer.peek_regex(r'"'):
+            match = self.lexer.pop_regex(r'\"((?:[^\\\"]|\\.)*)\"', checked=True)
             raw = match.group()
             value = self._parse_string_escapes(match.group(1))
             self.builder.string(raw, value)
@@ -153,8 +153,8 @@ class Parser:
         # NB we could pass regex literals to `re.compile`, since that's their "parsed" form, but then that would open the door to
         # syntax incompatibilities between Python's regex engine and whatever source we're reading from. That, and we couldn't save
         # the "g" flag. So we save regexes as just a pair of (pattern, flags) strings.
-        if self.lexer.peek(r'/'):
-            match = self.lexer.pop(r'/((?:[^\\/]|\\.)*)/(\w*)', checked=True)
+        if self.lexer.peek('/'):
+            match = self.lexer.pop_regex(r'/((?:[^\\/]|\\.)*)/(\w*)', checked=True)
             raw = match.group()
             raw_pattern, flags = match.groups()
             value = self._parse_string_escapes(raw_pattern)
@@ -185,55 +185,55 @@ class Parser:
         )
 
     def unquoted_key(self):
-        match = self.lexer.pop(r'\$?(?!\d)\w+')
+        match = self.lexer.pop_regex(r'\$?(?!\d)\w+')
         if match:
             raw = match.group()
             self.builder.string(raw, raw)
             return True
 
     def python_repr_expression(self):
-        match = self.lexer.pop(r'<\w+(?:[^\'\">]|"(?:[^\"\\]|\\.)*"|\'(?:[^\'\\]|\\.)*\')+>')
+        match = self.lexer.pop_regex(r'<\w+(?:[^\'\">]|"(?:[^\"\\]|\\.)*"|\'(?:[^\'\\]|\\.)*\')+>')
         if match:
             self.builder.python_repr(match.group())
             return True
 
     def identifier(self):
-        match = self.lexer.pop(r'\$?(?!\d)\w+')
+        match = self.lexer.pop_regex(r'\$?(?!\d)\w+')
         if match:
             self.builder.identifier(match.group())
             return True
 
     def square_bracketed_array(self):
-        if self.lexer.pop(r'\['):
+        if self.lexer.pop('['):
             self.builder.open_array(list)
-            self._comma_separated_list(r'\]', self.builder.array_element, allow_empty_slots=True)
+            self._comma_separated_list(']', self.builder.array_element, allow_empty_slots=True)
             self.builder.close_array()
             return True
 
     def round_bracketed_array(self):
-        if self.lexer.pop(r'\('):
+        if self.lexer.pop('('):
             self.builder.open_array(tuple)
-            self._comma_separated_list(r'\)', self.builder.array_element, needs_at_least_one_comma=True)
+            self._comma_separated_list(')', self.builder.array_element, needs_at_least_one_comma=True)
             self.builder.close_array()
             return True
 
-    def _comma_separated_list(self, re_end, builder_callback, needs_at_least_one_comma=False, allow_empty_slots=False):
+    def _comma_separated_list(self, end_token, builder_callback, needs_at_least_one_comma=False, allow_empty_slots=False):
         num_elements = count(1)
-        while not self.lexer.peek(re_end):
-            if allow_empty_slots and self.lexer.pop(r','):
+        while not self.lexer.peek(end_token):
+            if allow_empty_slots and self.lexer.pop(','):
                 self.builder.array_empty_slot()
                 builder_callback()
             else:
                 self.expression(checked=True)
-                if self.lexer.peek(r',') or self.lexer.peek(re_end):
+                if self.lexer.peek(',') or self.lexer.peek(end_token):
                     builder_callback()
-                if not self.lexer.pop(r',', checked=(needs_at_least_one_comma and next(num_elements) == 1)):
+                if not self.lexer.pop(',', checked=(needs_at_least_one_comma and next(num_elements) == 1)):
                     break
-        self.lexer.pop(re_end, checked=True)
+        self.lexer.pop(end_token, checked=True)
 
     def mapping_or_set(self, checked=False):
-        if self.lexer.pop(r'\{', checked):
-            if self.lexer.pop(r'\}'):
+        if self.lexer.pop('{', checked):
+            if self.lexer.pop('}'):
                 # empty mapping
                 self.builder.open_mapping()
                 self.builder.close_mapping()
@@ -249,7 +249,7 @@ class Parser:
                     self.builder.open_mapping()
                     recorder.playback()
                     raise
-                if have_possible_set_element and (self.lexer.pop(r',') or self.lexer.peek(r'\}')):
+                if have_possible_set_element and (self.lexer.pop(',') or self.lexer.peek('}')):
                     self._continue_as_set(recorder)
                 else:
                     self._continue_as_mapping(have_possible_set_element, recorder)
@@ -260,7 +260,7 @@ class Parser:
         recorder.playback()
         self.builder.set_element()
         self._comma_separated_list(
-            r'\}',
+            '}',
             builder_callback=self.builder.set_element,
         )
         self.builder.close_set()
@@ -270,23 +270,23 @@ class Parser:
         recorder.playback()
         if not first_key_already_parsed:
             self.mapping_key(checked=True)
-        self.lexer.pop(r':', checked=True)
+        self.lexer.pop(':', checked=True)
         self.builder.mapping_key()
         self.expression(checked=True)
-        if self.lexer.pop(r','):
+        if self.lexer.pop(','):
             self.builder.mapping_value()
-            while not self.lexer.peek(r'\}'):
+            while not self.lexer.peek('}'):
                 self.mapping_key(checked=True)
-                self.lexer.pop(r':', checked=True)
+                self.lexer.pop(':', checked=True)
                 self.builder.mapping_key()
                 self.expression(checked=True)
-                if self.lexer.peek(r',') or self.lexer.peek(r'\}'):
+                if self.lexer.peek(',') or self.lexer.peek('}'):
                     self.builder.mapping_value()
-                if not self.lexer.pop(r','):
+                if not self.lexer.pop(','):
                     break
-        elif self.lexer.peek(r'\}'):
+        elif self.lexer.peek('}'):
             self.builder.mapping_value()
-        self.lexer.pop(r'\}', checked=True)
+        self.lexer.pop('}', checked=True)
         self.builder.close_mapping()
 
     def mapping_key(self, checked=False):
@@ -300,12 +300,12 @@ class Parser:
         )
 
     def function_call(self):
-        match = self.lexer.pop(r'((?:new\s+)?\w+(?:\.\w+)*)\s*\(')
+        match = self.lexer.pop_regex(r'((?:new\s+)?\w+(?:\.\w+)*)\s*\(')
         if match:
             function_name = match.group(1)
             self.builder.open_function_call(function_name)
             self._comma_separated_list(
-                r'\)',
+                ')',
                 builder_callback=self.builder.function_argument,
             )
             self.builder.close_function_call()

@@ -43,14 +43,29 @@ class Lexer:
             self.text[self.position : self.position + 30],
         ))
 
-    def pop(self, regex, checked=False, do_skip=True):
+    def pop(self, token, checked=False, do_skip=True):
         """
-        Match the text at the current position in the text against the given regex. Returns the regex `Match` object.
+        Match the text at the current position in the text against the given token (a `str`). Returns a boolean indicating whether a
+        match was found.
 
-        If `checked` is True, raise a `ParserError` if the regex does not match at the current position. If `checked` is False (the
-        default) and the regex does not match, return `None`.
+        If `checked` is True, raise a `ParserError` rather than returning `False` when no match is false.
 
         If `do_skip` is True (the default), advance past whitespace (by calling `self.skip()`) after the matching data.
+        """
+        if self.text.startswith(token, self.position):
+            self.position += len(token)
+            if do_skip:
+                self.skip()
+            return True
+        elif checked:
+            self.error(token)
+        else:
+            return False
+
+    def pop_regex(self, regex, checked=False, do_skip=True):
+        """
+        Same as `pop`, but accepts a regex instead of a plain string token. Returns `None` if `checked` is False (the default) and
+        no match is found, else returns the `Match object.
         """
         regex = re.compile(regex)
         match = regex.match(self.text, self.position)
@@ -62,10 +77,15 @@ class Lexer:
             self.error(regex)
         return match
 
-    def peek(self, regex):
+    def peek(self, token):
         """
-        Check whether the text at the current position matches the given regex. Returns the `Match` object if the regex matches,
-        `None` if not.
+        Returns a boolean indicating whether the text at the current position starts with the given `token`.
+        """
+        return self.text.startswith(token, self.position)
+
+    def peek_regex(self, regex):
+        """
+        Same as `peek`, but accepts a regex instead of a plain string token.
         """
         regex = re.compile(regex)
         return regex.match(self.text, self.position)

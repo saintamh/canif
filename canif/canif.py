@@ -49,7 +49,7 @@ def translate(builder, input_text):
     lexer = Lexer(input_text)
     parser = Parser(lexer, builder)
     try:
-        while not lexer.peek(r'$'):
+        while not lexer.peek_regex(r'$'):
             parser.document()
             builder.output.write(linesep)
     except Exception:  # anything at all, pylint: disable=broad-except
