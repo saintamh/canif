@@ -17,7 +17,7 @@ def test_loads():
 def test_loads_parser_error():
     with pytest.raises(canif.ParserError) as error:
         canif.loads('{a": 1}')
-    assert str(error.value) == 'Position 2: expected /:/, found \'": 1}\''
+    assert str(error.value) == 'Position 2: expected `:`, found \'": 1}\''
 
 
 def test_load():
@@ -27,4 +27,4 @@ def test_load():
 def test_load_parser_error():
     with pytest.raises(canif.ParserError) as error:
         canif.load(StringIO('{a": 1}'))
-    assert str(error.value) == 'Position 2: expected /:/, found \'": 1}\''
+    assert str(error.value) == 'Position 2: expected `:`, found \'": 1}\''

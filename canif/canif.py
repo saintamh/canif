@@ -37,7 +37,7 @@ def loads(text):
     lexer = Lexer(text)
     parser = Parser(lexer, PodsBuilder())
     document = parser.document()
-    lexer.pop(r'$', checked=True)
+    lexer.end(checked=True)
     return document
 
 
@@ -49,7 +49,7 @@ def translate(builder, input_text):
     lexer = Lexer(input_text)
     parser = Parser(lexer, builder)
     try:
-        while not lexer.peek_regex(r'$'):
+        while not lexer.end():
             parser.document()
             builder.output.write(linesep)
     except Exception:  # anything at all, pylint: disable=broad-except

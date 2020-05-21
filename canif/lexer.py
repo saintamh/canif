@@ -7,6 +7,10 @@ import re
 from .parser import ParserError
 
 
+RE_SKIPPED = re.compile(r'(?:\s+|//.*)+')
+RE_END = re.compile(r'$')
+
+
 class Lexer:
     """
     Splits the input text into tokens, i.e. the smallest, indivisible strings in the text.
@@ -15,8 +19,6 @@ class Lexer:
 
     In its current implementation this is not written for performance. Maybe someday we'll look into a LEX/YACC sort of solution.
     """
-
-    re_skipped = re.compile(r'(?:\s+|//.*)+')
 
     def __init__(self, text):
         self.text = text
@@ -27,7 +29,7 @@ class Lexer:
         """
         Advance the position past skippable characters in the text (i.e. whitespace and comments)
         """
-        match = self.re_skipped.match(self.text, self.position)
+        match = RE_SKIPPED.match(self.text, self.position)
         if match:
             self.position = match.end()
 
@@ -37,6 +39,8 @@ class Lexer:
         """
         if not isinstance(expected, str):
             expected = '/%s/' % expected.pattern
+        elif not re.search(r'^\w+$', expected):
+            expected = '`%s`' % expected
         raise ParserError('Position %d: expected %s, found %r' % (
             self.position,
             expected,
@@ -67,7 +71,6 @@ class Lexer:
         Same as `pop`, but accepts a regex instead of a plain string token. Returns `None` if `checked` is False (the default) and
         no match is found, else returns the `Match object.
         """
-        regex = re.compile(regex)
         match = regex.match(self.text, self.position)
         if match:
             self.position = match.end()
@@ -89,6 +92,9 @@ class Lexer:
         """
         regex = re.compile(regex)
         return regex.match(self.text, self.position)
+
+    def end(self, checked=False):
+        return self.pop_regex(RE_END, checked=checked)
 
     def flush(self, file_out):
         """

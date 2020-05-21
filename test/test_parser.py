@@ -291,7 +291,7 @@ ALL_TEST_CASES = [
     ),
     Case(
         '(1)',
-        expected_parse=ParserError("Position 2: expected /,/, found ')'"),
+        expected_parse=ParserError("Position 2: expected `,`, found ')'"),
         expected_pods=[1],
     ),
     Case(

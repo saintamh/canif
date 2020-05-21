@@ -9,6 +9,47 @@ import re
 from .utils import undefined
 
 
+NAMED_CONSTANTS = {
+    'undefined': undefined,
+    'NotImplemented': NotImplemented,
+}
+
+
+BACKSLASH_ESCAPES = {
+    # Using http://json.org/ as a reference
+    '\\': (r'\\', lambda m: '\\'),
+    '"': (r'"', lambda m: '"'),
+    '/': (r'/', lambda m: '/'),
+    'b': (r'b', lambda m: '\x08'),
+    'f': (r'f', lambda m: '\x0C'),
+    'n': (r'n', lambda m: '\n'),
+    'r': (r'r', lambda m: '\r'),
+    't': (r't', lambda m: '\t'),
+    'u': (r'u(?:[0-9a-fA-F]{4})', lambda m: chr(int(m.group()[2:], 16))),
+    'x': (r'x(?:[0-9a-fA-F]{2})', lambda m: chr(int(m.group()[2:], 16))),
+    # Not strict JSON
+    "'": (r"'", lambda m: "'"),
+}
+
+RE_BACKSLASH_ESCAPES = re.compile(
+    r'\\(?:%s)' % '|'.join(regex for regex, _ in BACKSLASH_ESCAPES.values())
+)
+
+
+RE_NUMBER = re.compile(r'[\+\-]?\d+(?:\.\d+)?(?:[eE][\+\-]?\d+)?')
+RE_BOOL = re.compile(r'(?:[tT]rue|[fF]alse)\b')
+RE_NULL = re.compile(r'(?:null|None)\b')
+RE_CONSTANT = re.compile(r'|'.join(NAMED_CONSTANTS))
+RE_DOUBLE_QUOTED_STRING = re.compile(r'\"((?:[^\\\"]|\\.)*)\"')
+RE_SINGLE_QUOTED_STRING = re.compile(r"\'((?:[^\\\']|\\.)*)\'")
+RE_REGEX = re.compile(r'/((?:[^\\/]|\\.)*)/(\w*)')
+RE_UNQUOTED_KEY = re.compile(r'\$?(?!\d)\w+')
+RE_REPR = re.compile(r'<\w+(?:[^\'\">]|"(?:[^\"\\]|\\.)*"|\'(?:[^\'\\]|\\.)*\')+>')
+RE_IDENTIFIER = re.compile(r'\$?(?!\d)\w+')
+RE_FUNCTION_CALL = re.compile(r'((?:new\s+)?\w+(?:\.\w+)*)\s*\(')
+RE_E_NOTATION = re.compile(r'[\.eE]')
+
+
 class ParserError(Exception):
     """
     Exception used to signal that the input data does not follow a format that we were able to parse.
@@ -40,11 +81,6 @@ class Parser:
 
     In its current implementation this is not written for performance. Maybe someday we'll look into a LEX/YACC sort of solution.
     """
-
-    named_constants = {
-        'undefined': undefined,
-        'NotImplemented': NotImplemented,
-    }
 
     def __init__(self, lexer, builder):
         self.lexer = lexer
@@ -102,17 +138,17 @@ class Parser:
         )
 
     def number(self):
-        match = self.lexer.pop_regex(r'[\+\-]?\d+(?:\.\d+)?(?:[eE][\+\-]?\d+)?')
+        match = self.lexer.pop_regex(RE_NUMBER)
         if match:
             raw = match.group()
-            if re.search(r'[\.eE]', raw):
+            if RE_E_NOTATION.search(raw):
                 self.builder.float(raw, float(raw))
             else:
                 self.builder.int(raw, int(raw))
             return True
 
     def bool(self):
-        match = self.lexer.pop_regex(r'(?:[tT]rue|[fF]alse)\b')
+        match = self.lexer.pop_regex(RE_BOOL)
         if match:
             raw = match.group()
             value = raw[0].lower() == 't'
@@ -120,30 +156,30 @@ class Parser:
             return True
 
     def null(self):
-        match = self.lexer.pop_regex(r'(?:null|None)\b')
+        match = self.lexer.pop_regex(RE_NULL)
         if match:
             raw = match.group()
             self.builder.null(raw)
             return True
 
     def named_constant(self):
-        match = self.lexer.pop_regex(r'|'.join(self.named_constants))
+        match = self.lexer.pop_regex(RE_CONSTANT)
         if match:
             raw = match.group()
-            self.builder.named_constant(raw, self.named_constants[raw])
+            self.builder.named_constant(raw, NAMED_CONSTANTS[raw])
             return True
 
     def single_quoted_string(self):
-        if self.lexer.peek_regex(r"'"):
-            match = self.lexer.pop_regex(r"\'((?:[^\\\']|\\.)*)\'", checked=True)
+        if self.lexer.peek(r"'"):
+            match = self.lexer.pop_regex(RE_SINGLE_QUOTED_STRING, checked=True)
             raw = match.group()
             value = self._parse_string_escapes(match.group(1))
             self.builder.string(raw, value)
             return True
 
     def double_quoted_string(self):
-        if self.lexer.peek_regex(r'"'):
-            match = self.lexer.pop_regex(r'\"((?:[^\\\"]|\\.)*)\"', checked=True)
+        if self.lexer.peek('"'):
+            match = self.lexer.pop_regex(RE_DOUBLE_QUOTED_STRING, checked=True)
             raw = match.group()
             value = self._parse_string_escapes(match.group(1))
             self.builder.string(raw, value)
@@ -154,7 +190,7 @@ class Parser:
         # syntax incompatibilities between Python's regex engine and whatever source we're reading from. That, and we couldn't save
         # the "g" flag. So we save regexes as just a pair of (pattern, flags) strings.
         if self.lexer.peek('/'):
-            match = self.lexer.pop_regex(r'/((?:[^\\/]|\\.)*)/(\w*)', checked=True)
+            match = self.lexer.pop_regex(RE_REGEX, checked=True)
             raw = match.group()
             raw_pattern, flags = match.groups()
             value = self._parse_string_escapes(raw_pattern)
@@ -163,42 +199,26 @@ class Parser:
 
     @staticmethod
     def _parse_string_escapes(raw_text):
-        backslash_escapes = {
-            # Using http://json.org/ as a reference
-            '\\': (r'\\', lambda m: '\\'),
-            '"': (r'"', lambda m: '"'),
-            '/': (r'/', lambda m: '/'),
-            'b': (r'b', lambda m: '\x08'),
-            'f': (r'f', lambda m: '\x0C'),
-            'n': (r'n', lambda m: '\n'),
-            'r': (r'r', lambda m: '\r'),
-            't': (r't', lambda m: '\t'),
-            'u': (r'u(?:[0-9a-fA-F]{4})', lambda m: chr(int(m.group()[2:], 16))),
-            'x': (r'x(?:[0-9a-fA-F]{2})', lambda m: chr(int(m.group()[2:], 16))),
-            # Not strict JSON
-            "'": (r"'", lambda m: "'"),
-        }
-        return re.sub(
-            r'\\(?:%s)' % '|'.join(regex for regex, _ in backslash_escapes.values()),
-            lambda m: backslash_escapes[m.group()[1]][1](m),  # you're confused, pylint: disable=unnecessary-lambda
+        return RE_BACKSLASH_ESCAPES.sub(
+            lambda m: BACKSLASH_ESCAPES[m.group()[1]][1](m),  # you're confused, pylint: disable=unnecessary-lambda
             raw_text,
         )
 
     def unquoted_key(self):
-        match = self.lexer.pop_regex(r'\$?(?!\d)\w+')
+        match = self.lexer.pop_regex(RE_UNQUOTED_KEY)
         if match:
             raw = match.group()
             self.builder.string(raw, raw)
             return True
 
     def python_repr_expression(self):
-        match = self.lexer.pop_regex(r'<\w+(?:[^\'\">]|"(?:[^\"\\]|\\.)*"|\'(?:[^\'\\]|\\.)*\')+>')
+        match = self.lexer.pop_regex(RE_REPR)
         if match:
             self.builder.python_repr(match.group())
             return True
 
     def identifier(self):
-        match = self.lexer.pop_regex(r'\$?(?!\d)\w+')
+        match = self.lexer.pop_regex(RE_IDENTIFIER)
         if match:
             self.builder.identifier(match.group())
             return True
@@ -300,7 +320,7 @@ class Parser:
         )
 
     def function_call(self):
-        match = self.lexer.pop_regex(r'((?:new\s+)?\w+(?:\.\w+)*)\s*\(')
+        match = self.lexer.pop_regex(RE_FUNCTION_CALL)
         if match:
             function_name = match.group(1)
             self.builder.open_function_call(function_name)
