@@ -12,6 +12,8 @@ class Lexer:
     Splits the input text into tokens, i.e. the smallest, indivisible strings in the text.
 
     Instances of this class keep track of where they are in the text, and advance through it gradually.
+
+    In its current implementation this is not written for performance. Maybe someday we'll look into a LEX/YACC sort of solution.
     """
 
     re_skipped = re.compile(r'(?:\s+|//.*)+')
@@ -69,4 +71,7 @@ class Lexer:
         return regex.match(self.text, self.position)
 
     def flush(self, file_out):
+        """
+        Writes to the given file object whatever was left unconsumed in our input data.
+        """
         file_out.write(self.text[self.position:])

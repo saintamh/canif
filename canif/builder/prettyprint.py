@@ -6,7 +6,7 @@ from os import linesep
 
 class PrettyPrintBuilder:
     """
-    A builder that assembles a pretty-printed output, and writes it out.
+    Abstract base class for builders that translate input and pretty-print it out, without keeping it in memory.
     """
 
     def __init__(self, output, indent=4, ensure_ascii=False, trailing_commas=True):

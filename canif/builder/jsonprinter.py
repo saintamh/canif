@@ -11,6 +11,9 @@ class JsonPrinter(
         FunctionCallsAsJsonMixin,
         PrettyPrintBuilder,
         ):
+    """
+    A builder that translates input and pretty-prints it, as JSON.
+    """
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

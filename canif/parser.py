@@ -9,8 +9,10 @@ import re
 from .utils import undefined
 
 
-class ParserError(ValueError):
-    pass
+class ParserError(Exception):
+    """
+    Exception used to signal that the input data does not follow a format that we were able to parse.
+    """
 
 
 class Recorder:
@@ -32,6 +34,12 @@ class Recorder:
 
 
 class Parser:
+    """
+    Uses a Lexer to chop the input into tokens, and then interprets these tokens to build a structural representation of the data.
+    Makes calls to `Builder` methods as it discovers the data. Does not store the parsed data in memory.
+
+    In its current implementation this is not written for performance. Maybe someday we'll look into a LEX/YACC sort of solution.
+    """
 
     named_constants = {
         'undefined': undefined,

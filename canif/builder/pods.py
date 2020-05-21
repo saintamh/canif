@@ -41,7 +41,8 @@ class Mapping:
 
 class PodsBuilder(StringablesAsJsonMixin, FunctionCallsAsJsonMixin, Builder):
     """
-    A builder that assembles a Plain Old Data Structure (lists, dicts, strings) with the parsed data
+    A builder that assembles a Plain Old Data Structure (lists, dicts, strings) with the parsed data. Loads it all to memory, and
+    then returns it.
     """
 
     def __init__(self):
