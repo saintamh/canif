@@ -17,14 +17,15 @@ def parse_command_line(
         default_input_encoding=sys.stdin.encoding,
         default_output_encoding=sys.stdout.encoding
         ):
-    parser = argparse.ArgumentParser(description='Pretty-print JSON and JSON-like data')
+    parser = argparse.ArgumentParser(description='Pretty-print JSON and JSON-ish data')
     indent_group = parser.add_mutually_exclusive_group()
     indent_group.add_argument(
         '-i',
         '--indent',
         type=int,
         default=4,
-        help='Indentation level (0 means flattened, single-line output)',
+        metavar='N',
+        help='Indent each level by N spaces (0 means flat, single-line output)',
     )
     indent_group.add_argument(
         '-f',
@@ -39,7 +40,7 @@ def parse_command_line(
         dest='builder_class',
         const=JsonPrinter,
         default=VerbatimPrinter,
-        help='Ensure output is valid JSON (e.g. None becomes null)',
+        help="Convert data to valid JSON if it wasn't already (e.g. None becomes null)",
     )
     parser.add_argument(
         '-T',
@@ -55,14 +56,18 @@ def parse_command_line(
         help=r'Ensure JSON output is ASCII by using \uXXXX sequences in place of non-ASCII characters',
     )
     parser.add_argument(
+        '-I',
         '--input-encoding',
         default=default_input_encoding,
-        help='Character set used for decoding the input',
+        metavar='ENCODING',
+        help='Character set used for decoding the input (default: %s)' % default_input_encoding,
     )
     parser.add_argument(
+        '-O',
         '--output-encoding',
         default=default_output_encoding,
-        help='Character set used for encoding the output',
+        metavar='ENCODING',
+        help='Character set used for encoding the output (default: %s)' % default_output_encoding,
     )
     return parser.parse_args(argv[1:])
 
@@ -86,6 +91,7 @@ def run(options, input_bytes, output=sys.stdout):
         output,
         indent=0 if options.flatten else options.indent,
         ensure_ascii=options.ensure_ascii,
+        trailing_commas=options.trailing_commas
     )
     parser = Parser(lexer, builder)
     try:

@@ -137,6 +137,28 @@ $ canif -j < input.js
 
 The program pretty-prints the data as it loads it, so it should be able to handle very large files.
 
+Use `--help` for a quick rundown of available options:
+
+```console
+$ canif --help
+usage: canif [-h] [-i N | -f] [-j] [-T] [--ensure-ascii] [-I ENCODING] [-O ENCODING]
+
+Pretty-print JSON and JSON-ish data
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -i N, --indent N      Indent each level by N spaces (0 means flat, single-line output)
+  -f, --flatten         Flatten output (equivalent to -i 0)
+  -j, --json-output     Convert data to valid JSON if it wasn't already (e.g. None becomes null)
+  -T, --no-trailing-commas
+                        Don't insert trailing commas after the last item in a sequence. This is implied by --json-output.
+  --ensure-ascii        Ensure JSON output is ASCII by using \uXXXX sequences in place of non-ASCII characters
+  -I ENCODING, --input-encoding ENCODING
+                        Character set used for decoding the input (default: UTF-8)
+  -O ENCODING, --output-encoding ENCODING
+                        Character set used for encoding the output (default: UTF-8)
+```
+
 
 Emacs bindings
 ==============
