@@ -43,7 +43,6 @@ RE_CONSTANT = re.compile(r'|'.join(NAMED_CONSTANTS))
 RE_DOUBLE_QUOTED_STRING = re.compile(r'\"((?:[^\\\"]|\\.)*)\"')
 RE_SINGLE_QUOTED_STRING = re.compile(r"\'((?:[^\\\']|\\.)*)\'")
 RE_REGEX = re.compile(r'/((?:[^\\/]|\\.)*)/(\w*)')
-RE_UNQUOTED_KEY = re.compile(r'\$?(?!\d)\w+')
 RE_REPR = re.compile(r'<\w+(?:[^\'\">]|"(?:[^\"\\]|\\.)*"|\'(?:[^\'\\]|\\.)*\')+>')
 RE_IDENTIFIER = re.compile(r'\$?(?!\d)\w+')
 RE_FUNCTION_CALL = re.compile(r'((?:new\s+)?\w+(?:\.\w+)*)\s*\(')
@@ -205,7 +204,7 @@ class Parser:
         )
 
     def unquoted_key(self):
-        match = self.lexer.pop_regex(RE_UNQUOTED_KEY)
+        match = self.lexer.pop_regex(RE_IDENTIFIER)
         if match:
             raw = match.group()
             self.builder.string(raw, raw)
