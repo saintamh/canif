@@ -61,14 +61,14 @@ def parse_command_line(
         '--input-encoding',
         default=default_input_encoding,
         metavar='ENCODING',
-        help='Character set used for decoding the input (default: %s)' % default_input_encoding,
+        help='Character set used for decoding the input (default: %s)' % default_input_encoding.upper(),
     )
     parser.add_argument(
         '-O',
         '--output-encoding',
         default=default_output_encoding,
         metavar='ENCODING',
-        help='Character set used for encoding the output (default: %s)' % default_output_encoding,
+        help='Character set used for encoding the output (default: %s)' % default_output_encoding.upper(),
     )
     return parser.parse_args(argv[1:])
 

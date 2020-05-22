@@ -2,7 +2,7 @@
 
 # standards
 from doctest import DocTestParser, DocTestRunner
-from os import chdir, path
+from os import chdir, environ, path
 import re
 from subprocess import check_output
 from tempfile import TemporaryDirectory
@@ -39,6 +39,11 @@ def test_readme_examples():
                         shell=True,
                         cwd=temp_dir,
                         encoding='UTF-8',
+                        env={
+                            **environ,
+                            # `canif --help` reads this, and it can vary in the CI environment, so make it fixed
+                            'COLUMNS': '200',
+                        },
                     )
                     assert actual_output == block
 
