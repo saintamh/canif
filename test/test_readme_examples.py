@@ -42,9 +42,10 @@ def test_readme_examples():
                         env={
                             **environ,
                             # `canif --help` reads this, and it can vary in the CI environment, so make it fixed
-                            'COLUMNS': '200',
+                            'COLUMNS': '71',
                         },
                     )
+                    print(actual_output)
                     assert actual_output == block
 
             elif syntax == 'pycon':
