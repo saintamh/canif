@@ -41,7 +41,7 @@ def loads(text):
     return document
 
 
-def translate(builder, input_text):
+def translate(builder, input_text, single_document=False):
     """
     Read the given `input_text` and feed it to the given `Builder`, which should print out a translation of the data to its output
     stream. This is what the command-line tool invokes (see `cli.py`).
@@ -49,9 +49,10 @@ def translate(builder, input_text):
     lexer = Lexer(input_text)
     parser = Parser(lexer, builder)
     try:
-        while not lexer.end():
+        while not (single_document or lexer.end()):
             parser.document()
             builder.output.write(linesep)
+        lexer.end(checked=True)
     except Exception:  # anything at all, pylint: disable=broad-except
         builder.flush()  # finish printing the parsed tokens
         lexer.flush(builder.output)  # then print the unparsed input

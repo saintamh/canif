@@ -141,8 +141,8 @@ Use `--help` for a quick rundown of available options:
 
 ```console
 $ canif --help
-usage: canif [-h] [-i N | -f] [-j] [-T] [--ensure-ascii]
-             [-I ENCODING] [-O ENCODING]
+usage: canif [-h] [-i N | -f] [-j] [-T] [--single-document]
+             [--ensure-ascii] [-I ENCODING] [-O ENCODING]
 
 Pretty-print JSON and JSON-ish data
 
@@ -157,6 +157,9 @@ optional arguments:
                         Don't insert trailing commas after the last
                         item in a sequence. This is implied by
                         --json-output.
+  --single-document     Check that the input consists of a single
+                        document, rather that the default of
+                        accepting a stream of documents
   --ensure-ascii        Ensure JSON output is ASCII by using \uXXXX
                         sequences in place of non-ASCII characters
   -I ENCODING, --input-encoding ENCODING

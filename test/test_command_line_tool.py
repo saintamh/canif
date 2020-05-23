@@ -50,6 +50,7 @@ def test_command_line_tool(test):
     try:
         assert actual_output_text == test.expected_output_text
     except AssertionError:
+        print(test.input_text)
         print(actual_output_text)
         raise
 
@@ -89,7 +90,7 @@ def test_recovery(test, position):
     print('-- input_text --')
     print(input_text)
     result = run(
-        test.argv,
+        test.argv + ['--single-document'],
         input=input_text,
         stdout=PIPE,
         stderr=PIPE,

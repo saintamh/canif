@@ -52,6 +52,11 @@ def parse_command_line(
         help="Don't insert trailing commas after the last item in a sequence. This is implied by --json-output.",
     )
     parser.add_argument(
+        '--single-document',
+        action='store_true',
+        help='Check that the input consists of a single document, rather that the default of accepting a stream of documents',
+    )
+    parser.add_argument(
         '--ensure-ascii',
         action='store_true',
         help=r'Ensure JSON output is ASCII by using \uXXXX sequences in place of non-ASCII characters',
@@ -83,7 +88,7 @@ def main():
         ensure_ascii=options.ensure_ascii,
         trailing_commas=options.trailing_commas
     )
-    translate(builder, input_text)
+    translate(builder, input_text, single_document=options.single_document)
 
 
 if __name__ == '__main__':
