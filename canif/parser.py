@@ -65,6 +65,12 @@ class Recorder:
         self._host = host
         self._calls = []
 
+    def __len__(self):
+        return len(self._calls)
+
+    def __getitem__(self, item):
+        return self._calls[item]
+
     def __getattr__(self, method_name):
         return lambda *args, **kwargs: self._calls.append((method_name, args, kwargs))
 
@@ -95,48 +101,87 @@ class Parser:
         finally:
             self.builder = previous_builder
 
-    def _one_of(self, *functions, expected=None):
-        for function in functions:
-            found = function()
-            if found:
-                return True
-        if expected:
-            self.lexer.error(expected)
-        return False
-
-    def document(self, include_single_values=False):
+    def document(self):
         self.builder.open_document()
-        if include_single_values:
-            self.expression()
-        else:
-            self._one_of(
-                self.square_bracketed_array,
-                self.round_bracketed_array,
-                self.mapping_or_set,
-                self.function_call,
-                expected='document',
-            )
+        self.expression()
         return self.builder.close_document()
 
-    def expression(self, checked=False):
-        return self._one_of(
-            self.square_bracketed_array,
-            self.round_bracketed_array,
-            self.mapping_or_set,
-            self.single_quoted_string,
-            self.double_quoted_string,
-            self.regex_literal,
-            self.number,
-            self.bool,
-            self.null,
-            self.named_constant,
-            self.function_call,
-            self.identifier,
-            self.python_repr_expression,
-            expected=('expression' if checked else None),
-        )
+    def expression(self, checked=False, is_mapping_key=False):
+        # This is very much the hot spot of the code, so rather than breaking this up into a nice collection of methods, we put
+        # every branch in the same method. This gives us a measurable performance boost.
+        #
+        # Sorry, pylint: disable=too-many-statements, too-many-branches, too-many-return-statements
 
-    def number(self):
+        # square-bracketed array
+        if self.lexer.pop('['):
+            self.builder.open_array(list)
+            self._comma_separated_list(']', self.builder.array_element, allow_empty_slots=True)
+            self.builder.close_array()
+            return True
+
+        # round-bracketed array
+        if self.lexer.pop('('):
+            self.builder.open_array(tuple)
+            self._comma_separated_list(')', self.builder.array_element, needs_at_least_one_comma=True)
+            self.builder.close_array()
+            return True
+
+        # mapping or set
+        if self.lexer.pop('{'):
+            if self.lexer.pop('}'):
+                # empty mapping
+                self.builder.open_mapping()
+                self.builder.close_mapping()
+            else:
+                try:
+                    with self.record_builder_calls() as recorder:
+                        have_possible_set_element = self.expression(is_mapping_key=True)
+                except ParserError:
+                    # make sure we print back out everything we've consumed
+                    self.builder.open_mapping()
+                    recorder.playback()
+                    raise
+                if have_possible_set_element and (self.lexer.pop(',') or self.lexer.peek('}')):
+                    self._continue_set(recorder)
+                else:
+                    self._continue_mapping(have_possible_set_element, recorder)
+            return True
+
+        # single-quoted string
+        if self.lexer.peek(r"'"):
+            match = self.lexer.pop_regex(RE_SINGLE_QUOTED_STRING, checked=True)
+            raw = match.group()
+            value = self._parse_string_escapes(match.group(1))
+            self.builder.string(raw, value)
+            return True
+
+        # double-quoted string
+        if self.lexer.peek('"'):
+            match = self.lexer.pop_regex(RE_DOUBLE_QUOTED_STRING, checked=True)
+            raw = match.group()
+            value = self._parse_string_escapes(match.group(1))
+            self.builder.string(raw, value)
+            return True
+
+        # regex literals
+        if self.lexer.peek('/'):
+            # NB we could pass regex literals to `re.compile`, since that's their "parsed" form, but then that would open the door
+            # to syntax incompatibilities between Python's regex engine and whatever source we're reading from. That, and we
+            # couldn't save the "g" flag. So we save regexes as just a pair of (pattern, flags) strings.
+            match = self.lexer.pop_regex(RE_REGEX, checked=True)
+            raw = match.group()
+            raw_pattern, flags = match.groups()
+            value = self._parse_string_escapes(raw_pattern)
+            self.builder.regex(raw, value, flags)
+            return True
+
+        # python repr expression
+        if self.lexer.peek('<'):
+            match = self.lexer.pop_regex(RE_REPR, checked=True)
+            self.builder.python_repr(match.group())
+            return True
+
+        # number
         match = self.lexer.pop_regex(RE_NUMBER)
         if match:
             raw = match.group()
@@ -146,7 +191,7 @@ class Parser:
                 self.builder.int(raw, int(raw))
             return True
 
-    def bool(self):
+        # bool
         match = self.lexer.pop_regex(RE_BOOL)
         if match:
             raw = match.group()
@@ -154,47 +199,45 @@ class Parser:
             self.builder.bool(raw, value)
             return True
 
-    def null(self):
+        # null
         match = self.lexer.pop_regex(RE_NULL)
         if match:
             raw = match.group()
             self.builder.null(raw)
             return True
 
-    def named_constant(self):
+        # named constant
         match = self.lexer.pop_regex(RE_CONSTANT)
         if match:
             raw = match.group()
             self.builder.named_constant(raw, NAMED_CONSTANTS[raw])
             return True
 
-    def single_quoted_string(self):
-        if self.lexer.peek(r"'"):
-            match = self.lexer.pop_regex(RE_SINGLE_QUOTED_STRING, checked=True)
-            raw = match.group()
-            value = self._parse_string_escapes(match.group(1))
-            self.builder.string(raw, value)
+        # function call
+        match = self.lexer.pop_regex(RE_FUNCTION_CALL)
+        if match:
+            function_name = match.group(1)
+            self.builder.open_function_call(function_name)
+            self._comma_separated_list(
+                ')',
+                builder_callback=self.builder.function_argument,
+            )
+            self.builder.close_function_call()
             return True
 
-    def double_quoted_string(self):
-        if self.lexer.peek('"'):
-            match = self.lexer.pop_regex(RE_DOUBLE_QUOTED_STRING, checked=True)
+        # identifier or unquoted mapping key
+        match = self.lexer.pop_regex(RE_IDENTIFIER)
+        if match:
             raw = match.group()
-            value = self._parse_string_escapes(match.group(1))
-            self.builder.string(raw, value)
+            if is_mapping_key:
+                self.builder.string(raw, raw)
+            else:
+                self.builder.identifier(raw)
             return True
 
-    def regex_literal(self):
-        # NB we could pass regex literals to `re.compile`, since that's their "parsed" form, but then that would open the door to
-        # syntax incompatibilities between Python's regex engine and whatever source we're reading from. That, and we couldn't save
-        # the "g" flag. So we save regexes as just a pair of (pattern, flags) strings.
-        if self.lexer.peek('/'):
-            match = self.lexer.pop_regex(RE_REGEX, checked=True)
-            raw = match.group()
-            raw_pattern, flags = match.groups()
-            value = self._parse_string_escapes(raw_pattern)
-            self.builder.regex(raw, value, flags)
-            return True
+        if checked:
+            self.lexer.error('key' if is_mapping_key else 'expression')
+        return False
 
     @staticmethod
     def _parse_string_escapes(raw_text):
@@ -202,39 +245,6 @@ class Parser:
             lambda m: BACKSLASH_ESCAPES[m.group()[1]][1](m),  # you're confused, pylint: disable=unnecessary-lambda
             raw_text,
         )
-
-    def unquoted_key(self):
-        match = self.lexer.pop_regex(RE_IDENTIFIER)
-        if match:
-            raw = match.group()
-            self.builder.string(raw, raw)
-            return True
-
-    def python_repr_expression(self):
-        match = self.lexer.pop_regex(RE_REPR)
-        if match:
-            self.builder.python_repr(match.group())
-            return True
-
-    def identifier(self):
-        match = self.lexer.pop_regex(RE_IDENTIFIER)
-        if match:
-            self.builder.identifier(match.group())
-            return True
-
-    def square_bracketed_array(self):
-        if self.lexer.pop('['):
-            self.builder.open_array(list)
-            self._comma_separated_list(']', self.builder.array_element, allow_empty_slots=True)
-            self.builder.close_array()
-            return True
-
-    def round_bracketed_array(self):
-        if self.lexer.pop('('):
-            self.builder.open_array(tuple)
-            self._comma_separated_list(')', self.builder.array_element, needs_at_least_one_comma=True)
-            self.builder.close_array()
-            return True
 
     def _comma_separated_list(self, end_token, builder_callback, needs_at_least_one_comma=False, allow_empty_slots=False):
         num_elements = count(1)
@@ -250,33 +260,14 @@ class Parser:
                     break
         self.lexer.pop(end_token, checked=True)
 
-    def mapping_or_set(self, checked=False):
-        if self.lexer.pop('{', checked):
-            if self.lexer.pop('}'):
-                # empty mapping
-                self.builder.open_mapping()
-                self.builder.close_mapping()
-            else:
-                try:
-                    with self.record_builder_calls() as recorder:
-                        have_possible_set_element = self._one_of(
-                            self.mapping_key,
-                            self.expression,
-                        )
-                except ParserError:
-                    # make sure we print back out everything we've consumed
-                    self.builder.open_mapping()
-                    recorder.playback()
-                    raise
-                if have_possible_set_element and (self.lexer.pop(',') or self.lexer.peek('}')):
-                    self._continue_as_set(recorder)
-                else:
-                    self._continue_as_mapping(have_possible_set_element, recorder)
-            return True
-
-    def _continue_as_set(self, recorder):
+    def _continue_set(self, recorder):
         self.builder.open_set()
-        recorder.playback()
+        if len(recorder) == 1 and recorder[0][0] == 'string' and recorder[0][1][0] == recorder[0][1][1]:
+            # It looked like a naked string mapping key when we parsed it, but now we're realised we have a set, so it wasn't a
+            # string, it's an identifier
+            self.builder.identifier(recorder[0][1][0])
+        else:
+            recorder.playback()
         self.builder.set_element()
         self._comma_separated_list(
             '}',
@@ -284,18 +275,18 @@ class Parser:
         )
         self.builder.close_set()
 
-    def _continue_as_mapping(self, first_key_already_parsed, recorder):
+    def _continue_mapping(self, first_key_already_parsed, recorder):
         self.builder.open_mapping()
         recorder.playback()
         if not first_key_already_parsed:
-            self.mapping_key(checked=True)
+            self.expression(checked=True, is_mapping_key=True)
         self.lexer.pop(':', checked=True)
         self.builder.mapping_key()
         self.expression(checked=True)
         if self.lexer.pop(','):
             self.builder.mapping_value()
             while not self.lexer.peek('}'):
-                self.mapping_key(checked=True)
+                self.expression(checked=True, is_mapping_key=True)
                 self.lexer.pop(':', checked=True)
                 self.builder.mapping_key()
                 self.expression(checked=True)
@@ -307,25 +298,3 @@ class Parser:
             self.builder.mapping_value()
         self.lexer.pop('}', checked=True)
         self.builder.close_mapping()
-
-    def mapping_key(self, checked=False):
-        return self._one_of(
-            self.single_quoted_string,
-            self.double_quoted_string,
-            self.number,
-            self.unquoted_key,
-            self.round_bracketed_array,
-            expected=('key' if checked else None),
-        )
-
-    def function_call(self):
-        match = self.lexer.pop_regex(RE_FUNCTION_CALL)
-        if match:
-            function_name = match.group(1)
-            self.builder.open_function_call(function_name)
-            self._comma_separated_list(
-                ')',
-                builder_callback=self.builder.function_argument,
-            )
-            self.builder.close_function_call()
-            return True
