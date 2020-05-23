@@ -5,6 +5,8 @@
     "two+trail": {1, 2,},
     "nested": {1, {2, {3}}},
     "nested+trail": {1, {2, {3},},},
+    "identifiers": {a, b},
+    "strings": {"a", "b"},
 }
 
 --
@@ -41,6 +43,14 @@ $ canif -i 4
                 3,
             },
         },
+    },
+    "identifiers": {
+        a,
+        b,
+    },
+    "strings": {
+        "a",
+        "b",
     },
 }
 
@@ -97,6 +107,18 @@ $ canif -i 4 -j
                     }
                 ]
             }
+        ]
+    },
+    "identifiers": {
+        "$set": [
+            "$$a",
+            "$$b"
+        ]
+    },
+    "strings": {
+        "$set": [
+            "a",
+            "b"
         ]
     }
 }

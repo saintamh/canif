@@ -372,18 +372,18 @@ ALL_TEST_CASES = [
         expected_parse=ParserError('Position 1: expected key, found \',"a": 1}\''),
     ),
     Case(
-        '{a: 1}',
+        '{a: a}',
         expected_parse=[
             AST.open_mapping(),
             AST.string('a', 'a'),
             AST.mapping_key(),
-            AST.int('1', 1),
+            AST.identifier('a'),
             AST.mapping_value(),
             AST.close_mapping(),
         ],
-        expected_pods={'a': 1},
-        expected_verb='{a: 1}',
-        expected_json='{"a": 1}',
+        expected_pods={'a': '$$a'},
+        expected_verb='{a: a}',
+        expected_json='{"a": "$$a"}',
     ),
 
     # # Mappings with tuples as keys
@@ -477,6 +477,20 @@ ALL_TEST_CASES = [
         expected_pods={1, 2},
         expected_verb='{1, 2}',
         expected_json='{"$set": [1, 2]}',
+    ),
+    Case(
+        '{a, b}',
+        expected_parse=[
+            AST.open_set(),
+            AST.identifier('a'),
+            AST.set_element(),
+            AST.identifier('b'),
+            AST.set_element(),
+            AST.close_set(),
+        ],
+        expected_pods={'$$a', '$$b'},
+        expected_verb='{a, b}',
+        expected_json='{"$set": ["$$a", "$$b"]}',
     ),
 
     # Single-quoted strings

@@ -1,6 +1,7 @@
 {
     "simple": x,
     "dollar": $x,
+    "mapping": {unquoted_string: identifier},
 }
 
 --
@@ -8,11 +9,17 @@ $ canif -i 4
 {
     "simple": x,
     "dollar": $x,
+    "mapping": {
+        unquoted_string: identifier,
+    },
 }
 
 --
 $ canif -i 4 -j
 {
     "simple": "$$x",
-    "dollar": "$$$x"
+    "dollar": "$$$x",
+    "mapping": {
+        "unquoted_string": "$$identifier"
+    }
 }
