@@ -48,7 +48,7 @@ def test_readme_examples():
                     print(actual_output)
                     assert actual_output == block
 
-            elif syntax == 'pycon':
+            elif syntax == 'python':
                 parser = DocTestParser()
                 test = parser.get_doctest(block, {'canif': canif}, 'README.md', 'README.md', 0)
                 runner = DocTestRunner()

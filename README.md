@@ -30,19 +30,19 @@ $ cat input.mongo
 
 You can use the `canif` library to load up that data as Plain Old Data Structures:
 
-```pycon
+```python
 >>> with open('input.js', 'rt', encoding='UTF-8') as file_in:
 ...    canif.load(file_in)
 {'$$setConfig': [{'editable': True, 'latlng': {'$$new LatLng': [48.1434, 17.1082]}, 'last_modified': {'$$new Date': [1995, 11, 17]}}]}
 ```
 
-```pycon
+```python
 >>> with open('input.py', 'rt', encoding='UTF-8') as file_in:
 ...    canif.load(file_in)
 {'_id': 73, 'occur': {'$$OrderedDict': [[('doc1', 10), ('doc2', 1)]]}, 'match': '$repr<_sre.SRE_Match object at 0x7f2b9eaa5f80>'}
 ```
 
-```pycon
+```python
 >>> with open('input.mongo', 'rt', encoding='UTF-8') as file_in:
 ...    canif.load(file_in)
 {'id': {'$oid': ['507f191e810c19729de860ea']}, 'last_modified': {'$$ISODate': ['2020-05-20T00:00:00Z']}}
