@@ -59,9 +59,25 @@ class VerbatimPrinter(PrettyPrintBuilder):
         self.stack.append(0)
         self.spacer = self._indent_string()
 
-    def function_argument(self):
+    def function_call_positional_argument(self):
         self.stack[-1] += 1
         self._comma_separator()
+
+    def function_call_end_positional_arguments(self):
+        pass
+
+    def function_call_start_keyword_arguments(self):
+        pass
+
+    def function_call_keyword_argument_key(self):
+        self._print('=')
+
+    def function_call_keyword_argument_value(self):
+        self.stack[-1] += 1
+        self._comma_separator()
+
+    def function_call_end_keyword_arguments(self):
+        pass
 
     def close_function_call(self):
         length = self.stack.pop()

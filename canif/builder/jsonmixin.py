@@ -106,10 +106,27 @@ class FunctionCallsAsJsonMixin:
         self.mapping_key()
         self.open_array(list)
 
-    def function_argument(self):
+    def function_call_positional_argument(self):
         self.array_element()
 
-    def close_function_call(self):
+    def function_call_end_positional_arguments(self):
         self.close_array()
         self.mapping_value()
+
+    def function_call_start_keyword_arguments(self):
+        self.string(None, '$kwargs')
+        self.mapping_key()
+        self.open_mapping()
+
+    def function_call_keyword_argument_key(self):
+        self.mapping_key()
+
+    def function_call_keyword_argument_value(self):
+        self.mapping_value()
+
+    def function_call_end_keyword_arguments(self):
+        self.close_mapping()
+        self.mapping_value()
+
+    def close_function_call(self):
         self.close_mapping()

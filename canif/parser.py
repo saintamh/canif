@@ -44,9 +44,21 @@ RE_DOUBLE_QUOTED_STRING = re.compile(r'\"((?:[^\\\"]|\\.)*)\"')
 RE_SINGLE_QUOTED_STRING = re.compile(r"\'((?:[^\\\']|\\.)*)\'")
 RE_REGEX = re.compile(r'/((?:[^\\/]|\\.)*)/(\w*)')
 RE_REPR = re.compile(r'<\w+(?:[^\'\">]|"(?:[^\"\\]|\\.)*"|\'(?:[^\'\\]|\\.)*\')+>')
-RE_IDENTIFIER = re.compile(r'\$?(?!\d)\w+')
+RE_IDENTIFIER = re.compile(
+    fr'''
+        (?! {RE_BOOL.pattern}\b
+          | {RE_NULL.pattern}\b
+          | {RE_CONSTANT.pattern}\b
+          | \d
+          )
+         \$? \w+
+    ''',
+    flags=re.X
+)
 RE_FUNCTION_CALL = re.compile(r'((?:new\s+)?\w+(?:\.\w+)*)\s*\(')
 RE_E_NOTATION = re.compile(r'[\.eE]')
+
+EXPECTED_KWARG = 'positional argument follows keyword argument'
 
 
 class ParserError(Exception):
@@ -217,12 +229,7 @@ class Parser:
         match = self.lexer.pop_regex(RE_FUNCTION_CALL)
         if match:
             function_name = match.group(1)
-            self.builder.open_function_call(function_name)
-            self._comma_separated_list(
-                ')',
-                builder_callback=self.builder.function_argument,
-            )
-            self.builder.close_function_call()
+            self._function_call(function_name)
             return True
 
         # identifier or unquoted mapping key
@@ -259,6 +266,41 @@ class Parser:
                 if not self.lexer.pop(',', checked=(needs_at_least_one_comma and next(num_elements) == 1)):
                     break
         self.lexer.pop(end_token, checked=True)
+
+    def _function_call(self, function_name):
+        have_reached_keywords = False
+        self.builder.open_function_call(function_name)
+        while not self.lexer.peek(')'):
+            if not have_reached_keywords and self.lexer.pop(','):
+                self.builder.array_empty_slot()
+                self.builder.function_call_positional_argument()
+            else:
+                match = self.lexer.pop_regex(RE_IDENTIFIER, checked=have_reached_keywords, message=EXPECTED_KWARG)
+                if match:
+                    raw = match.group()
+                    if self.lexer.pop('=', checked=have_reached_keywords, message=EXPECTED_KWARG):
+                        if not have_reached_keywords:
+                            have_reached_keywords = True
+                            self.builder.function_call_end_positional_arguments()
+                            self.builder.function_call_start_keyword_arguments()
+                        self.builder.string(raw, raw)
+                        self.builder.function_call_keyword_argument_key()
+                        self.expression(checked=True)
+                        self.builder.function_call_keyword_argument_value()
+                    else:
+                        self.builder.identifier(raw)
+                        self.builder.function_call_positional_argument()
+                else:
+                    self.expression(checked=True)
+                    self.builder.function_call_positional_argument()
+                if not self.lexer.pop(','):
+                    break
+        self.lexer.pop(')', checked=True)
+        if have_reached_keywords:
+            self.builder.function_call_end_keyword_arguments()
+        else:
+            self.builder.function_call_end_positional_arguments()
+        self.builder.close_function_call()
 
     def _continue_set(self, recorder):
         self.builder.open_set()

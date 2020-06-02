@@ -33,21 +33,22 @@ class Lexer:
         if match:
             self.position = match.end()
 
-    def error(self, expected):
+    def error(self, expected, message=None):
         """
         Raise a `ParserError`. `expected` describes the token that was expected and not found at the current position.
         """
-        if not isinstance(expected, str):
-            expected = '/%s/' % expected.pattern
-        elif not re.search(r'^\w+$', expected):
-            expected = '`%s`' % expected
-        raise ParserError('Position %d: expected %s, found %r' % (
-            self.position,
-            expected,
-            self.text[self.position : self.position + 30],
-        ))
+        if message is None:
+            if not isinstance(expected, str):
+                expected = '/%s/' % expected.pattern
+            elif not re.search(r'^\w+$', expected):
+                expected = '`%s`' % expected
+            message = 'expected %s, found %r' % (
+                expected,
+                self.text[self.position : self.position + 30],
+            )
+        raise ParserError('Position %d: %s' % (self.position, message))
 
-    def pop(self, token, checked=False, do_skip=True):
+    def pop(self, token, checked=False, do_skip=True, message=None):
         """
         Match the text at the current position in the text against the given token (a `str`). Returns a boolean indicating whether a
         match was found.
@@ -62,11 +63,11 @@ class Lexer:
                 self.skip()
             return True
         elif checked:
-            self.error(token)
+            self.error(token, message)
         else:
             return False
 
-    def pop_regex(self, regex, checked=False, do_skip=True):
+    def pop_regex(self, regex, checked=False, do_skip=True, message=None):
         """
         Same as `pop`, but accepts a regex instead of a plain string token. Returns `None` if `checked` is False (the default) and
         no match is found, else returns the `Match object.
@@ -77,7 +78,7 @@ class Lexer:
             if do_skip:
                 self.skip()
         elif checked:
-            self.error(regex)
+            self.error(regex, message)
         return match
 
     def peek(self, token):

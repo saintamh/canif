@@ -77,7 +77,22 @@ class Builder:
     def open_function_call(self, function_name):
         raise NotImplementedError
 
-    def function_argument(self):
+    def function_call_positional_argument(self):
+        raise NotImplementedError
+
+    def function_call_end_positional_arguments(self):
+        raise NotImplementedError
+
+    def function_call_start_keyword_arguments(self):
+        raise NotImplementedError
+
+    def function_call_keyword_argument_key(self):
+        raise NotImplementedError
+
+    def function_call_keyword_argument_value(self):
+        raise NotImplementedError
+
+    def function_call_end_keyword_arguments(self):
         raise NotImplementedError
 
     def close_function_call(self):
