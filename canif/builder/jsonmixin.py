@@ -62,8 +62,12 @@ class PrimitivesAsJsonMixin:
 
 class StringablesAsJsonMixin:
 
+    def __init__(self, *args, identifier_prefix='$$', **kwargs):
+        super().__init__(*args, **kwargs)
+        self.identifier_prefix = identifier_prefix
+
     def identifier(self, name):
-        self.string(name, '$$%s' % name)
+        self.string(name, '%s%s' % (self.identifier_prefix, name))
 
     def regex(self, pattern, flags):
         self.open_mapping()
@@ -98,7 +102,7 @@ class FunctionCallsAsJsonMixin:
 
     def open_function_call(self, function_name):
         self.open_mapping()
-        self.string(None, self.special.get(function_name, '$$%s' % function_name))
+        self.string(None, self.special.get(function_name, '%s%s' % (self.identifier_prefix, function_name)))
         self.mapping_key()
         self.open_array(list)
 

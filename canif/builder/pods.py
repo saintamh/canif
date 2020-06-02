@@ -45,8 +45,8 @@ class PodsBuilder(StringablesAsJsonMixin, FunctionCallsAsJsonMixin, Builder):
     then returns it.
     """
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         self.stack = NotImplemented
 
     def float(self, raw, value):

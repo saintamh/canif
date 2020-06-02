@@ -13,7 +13,7 @@ from .lexer import Lexer
 from .parser import Parser
 
 
-def load(file):
+def load(file, **options):
     """
     Read JSON or JSON-ish data structures from `file`, parse them, and build them as Plain Old Data Structures (`dict`, `list`,
     `set` etc).
@@ -22,10 +22,10 @@ def load(file):
 
     Will raise `ParserError` if a syntax error is encountered.
     """
-    return loads(file.read())
+    return loads(file.read(), **options)
 
 
-def loads(text):
+def loads(text, **options):
     """
     Read JSON or JSON-ish data structures from `text`, parse them, and build them as Plain Old Data Structures (`dict`, `list`,
     `set` etc).
@@ -35,7 +35,7 @@ def loads(text):
     Will raise `ParserError` if a syntax error is encountered.
     """
     lexer = Lexer(text)
-    parser = Parser(lexer, PodsBuilder())
+    parser = Parser(lexer, PodsBuilder(**options))
     document = parser.document()
     lexer.end(checked=True)
     return document
@@ -53,7 +53,7 @@ def translate(builder, input_text, single_document=False):
             parser.document()
             builder.output.write(linesep)
         lexer.end(checked=True)
-    except Exception:  # anything at all, pylint: disable=broad-except
+    except Exception:
         builder.flush()  # finish printing the parsed tokens
         lexer.flush(builder.output)  # then print the unparsed input
         raise
