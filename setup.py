@@ -18,7 +18,7 @@ setuptools.setup(
     long_description=long_description,
     long_description_content_type='text/markdown',
     url='https://github.com/saintamh/canif/',
-    packages=['canif'],
+    packages=setuptools.find_packages(),
     entry_points={
         'console_scripts': [
             'canif = canif.cli:main',
