@@ -11,6 +11,7 @@ import sys
 # canif
 from .builder import JsonPrinter, VerbatimPrinter
 from .canif import translate
+from .parser import ParserError
 
 
 def parse_command_line(
@@ -88,7 +89,11 @@ def main():
         ensure_ascii=options.ensure_ascii,
         trailing_commas=options.trailing_commas
     )
-    translate(builder, input_text, single_document=options.single_document)
+    try:
+        translate(builder, input_text, single_document=options.single_document)
+    except ParserError as error:
+        print('ParserError: %s' % error, file=sys.stderr)
+        sys.exit(1)
 
 
 if __name__ == '__main__':
