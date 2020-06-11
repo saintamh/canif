@@ -276,20 +276,22 @@ class Parser:
                 self.builder.function_call_positional_argument()
             else:
                 match = self.lexer.pop_regex(RE_IDENTIFIER, checked=have_reached_keywords, message=EXPECTED_KWARG)
-                if match:
-                    raw = match.group()
-                    if self.lexer.pop('=', checked=have_reached_keywords, message=EXPECTED_KWARG):
-                        if not have_reached_keywords:
-                            have_reached_keywords = True
-                            self.builder.function_call_end_positional_arguments()
-                            self.builder.function_call_start_keyword_arguments()
-                        self.builder.string(raw, raw)
-                        self.builder.function_call_keyword_argument_key()
-                        self.expression(checked=True)
-                        self.builder.function_call_keyword_argument_value()
-                    else:
-                        self.builder.identifier(raw)
-                        self.builder.function_call_positional_argument()
+                raw = match and match.group()
+                if raw and self.lexer.pop('=', checked=have_reached_keywords, message=EXPECTED_KWARG):
+                    if not have_reached_keywords:
+                        have_reached_keywords = True
+                        self.builder.function_call_end_positional_arguments()
+                        self.builder.function_call_start_keyword_arguments()
+                    self.builder.string(raw, raw)
+                    self.builder.function_call_keyword_argument_key()
+                    self.expression(checked=True)
+                    self.builder.function_call_keyword_argument_value()
+                elif raw and (self.lexer.peek(',') or self.lexer.peek(')')):
+                    self.builder.identifier(raw)
+                    self.builder.function_call_positional_argument()
+                elif raw and self.lexer.pop('('):
+                    self._function_call(function_name=raw)
+                    self.builder.function_call_positional_argument()
                 else:
                     self.expression(checked=True)
                     self.builder.function_call_positional_argument()
