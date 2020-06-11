@@ -11,7 +11,7 @@ with open(path.join(path.dirname(__file__), 'README.md'), 'rb') as file_in:
 
 setuptools.setup(
     name='canif',
-    version='0.3.0',
+    version='0.3.1',
     author='Hervé Saint-Amand',
     author_email='canif@saintamh.org',
     description='Parser and pretty-printer for JSON and JSON-ish data',
