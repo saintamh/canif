@@ -94,6 +94,8 @@ def main():
     except ParserError as error:
         print('ParserError: %s' % error, file=sys.stderr)
         sys.exit(1)
+    except BrokenPipeError:
+        pass
 
 
 if __name__ == '__main__':
