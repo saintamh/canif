@@ -48,9 +48,13 @@ with a prefix, flattened)"
     (select-from-point-to-matching-parens))
   (let ((command (concat "canif" (if arg " --flatten" ""))))
     (run-shell-command-replace-region command)
-    (save-excursion
-      ;; delete extra newline
-      (exchange-point-and-mark)
-      (when (looking-at "\n")
-        (delete-char 1)))))
-
+    ;; delete extra newline
+    (exchange-point-and-mark)
+    (when (looking-at "\n")
+      (delete-char 1))
+    (when (looking-at ",")
+      (save-excursion
+        (left-char)
+        (when (looking-at "\n")
+          (delete-char 1))))
+    (exchange-point-and-mark)))
