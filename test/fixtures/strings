@@ -1,0 +1,33 @@
+{
+    "single_quoted": 'You say \'goodbye\', and I say "hello"',
+    "double_quoted": "You say \"goodbye\", and I say 'hello'",
+    "binary": b"Hell\x6F",
+    "unicode": u"Hell\u043E",
+    "raw": r'Hell\w',
+    "format": f'You say {your_line}, and I say {my_line}',
+    "raw_binary": br'Hell\w'
+}
+
+--
+$ canif -i 4
+{
+    "single_quoted": 'You say \'goodbye\', and I say "hello"',
+    "double_quoted": "You say \"goodbye\", and I say 'hello'",
+    "binary": b"Hell\x6F",
+    "unicode": u"Hell\u043E",
+    "raw": r'Hell\w',
+    "format": f'You say {your_line}, and I say {my_line}',
+    "raw_binary": br'Hell\w',
+}
+
+--
+$ canif -i 4 -j
+{
+    "single_quoted": "You say 'goodbye', and I say \"hello\"",
+    "double_quoted": "You say \"goodbye\", and I say 'hello'",
+    "binary": "Hello",
+    "unicode": "Hellо",
+    "raw": "Hell\\w",
+    "format": "You say {your_line}, and I say {my_line}",
+    "raw_binary": "Hell\\w"
+}

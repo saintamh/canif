@@ -40,8 +40,9 @@ RE_NUMBER = re.compile(r'[\+\-]?\d+(?:\.\d+)?(?:[eE][\+\-]?\d+)?')
 RE_BOOL = re.compile(r'(?:[tT]rue|[fF]alse)\b')
 RE_NULL = re.compile(r'(?:null|None)\b')
 RE_CONSTANT = re.compile(r'|'.join(NAMED_CONSTANTS))
-RE_DOUBLE_QUOTED_STRING = re.compile(r'\"((?:[^\\\"]|\\.)*)\"')
-RE_SINGLE_QUOTED_STRING = re.compile(r"\'((?:[^\\\']|\\.)*)\'")
+RE_STRING_PREFIXES = r'(?i:[bfu]?r?)'
+RE_DOUBLE_QUOTED_STRING = re.compile(fr'{RE_STRING_PREFIXES}\"((?:[^\\\"]|\\.)*)\"')
+RE_SINGLE_QUOTED_STRING = re.compile(fr"{RE_STRING_PREFIXES}\'((?:[^\\\']|\\.)*)\'")
 RE_REGEX = re.compile(r'/((?:[^\\/]|\\.)*)/(\w*)')
 RE_REPR = re.compile(r'<\w+(?:[^\'\">]|"(?:[^\"\\]|\\.)*"|\'(?:[^\'\\]|\\.)*\')+>')
 RE_IDENTIFIER = re.compile(
@@ -160,7 +161,7 @@ class Parser:
             return True
 
         # single-quoted string
-        if self.lexer.peek(r"'"):
+        if self.lexer.peek_regex(fr"{RE_STRING_PREFIXES}'"):
             match = self.lexer.pop_regex(RE_SINGLE_QUOTED_STRING, checked=True)
             raw = match.group()
             value = self._parse_string_escapes(match.group(1))
@@ -168,7 +169,7 @@ class Parser:
             return True
 
         # double-quoted string
-        if self.lexer.peek('"'):
+        if self.lexer.peek_regex(fr'{RE_STRING_PREFIXES}"'):
             match = self.lexer.pop_regex(RE_DOUBLE_QUOTED_STRING, checked=True)
             raw = match.group()
             value = self._parse_string_escapes(match.group(1))
