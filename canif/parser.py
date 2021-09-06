@@ -116,7 +116,7 @@ class Parser:
 
     def document(self):
         self.builder.open_document()
-        self.expression()
+        self.expression(checked=True)
         return self.builder.close_document()
 
     def expression(self, checked=False, is_mapping_key=False):
