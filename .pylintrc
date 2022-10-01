@@ -47,9 +47,6 @@ max-attributes=15
 
 [BASIC]
 
-# We're cool with map, filter, input
-bad-functions=
-
 # Remove restrictions on name lengths
 argument-rgx=[a-z_][a-z0-9_]*$
 attr-rgx=[a-z_][a-z0-9_]*$

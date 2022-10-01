@@ -32,7 +32,7 @@ BACKSLASH_ESCAPES = {
 }
 
 RE_BACKSLASH_ESCAPES = re.compile(
-    r'\\(?:%s)' % '|'.join(regex for regex, _ in BACKSLASH_ESCAPES.values())
+    r'\\(?:%s)' % '|'.join(regex for regex, _ in BACKSLASH_ESCAPES.values())  # pylint: disable=consider-using-f-string
 )
 
 
@@ -146,6 +146,7 @@ class Parser:
                 self.builder.open_mapping()
                 self.builder.close_mapping()
             else:
+                recorder = None
                 try:
                     with self.record_builder_calls() as recorder:
                         have_possible_set_element = self.expression(is_mapping_key=True)

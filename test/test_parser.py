@@ -19,7 +19,8 @@ class AstNode(NamedTuple):
     values: tuple
 
     def __repr__(self):
-        return 'AST.%s(%s)' % (self.kind, ', '.join(map(repr, self.values)))
+        values = ', '.join(map(repr, self.values))
+        return f'AST.{self.kind}({values})'
 
 
 class AstClass:
@@ -55,7 +56,7 @@ AST = AstClass()
 
 class Case(NamedTuple):
     input_text: str
-    expected_parse: AstNode
+    expected_parse: list[AstNode] | ParserError
     expected_pods: object = NotImplemented
     expected_verb: str = NotImplemented
     expected_json: str = NotImplemented

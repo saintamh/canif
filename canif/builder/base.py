@@ -1,102 +1,136 @@
 #!/usr/bin/env python3
 
+# standards
+from abc import ABC, abstractmethod
 
-class Builder:
+
+class Builder(ABC):
     """
     `Builder` subclasses define a method for every event that the parser encounters as it navigates the tree of the input data. The
     `Parser` takes a `Builder` instance and calls those callback methods as the input is parsed. It's then up to to `Builder` to
     define what to build a tree syntax or whatever representation of the AST it needs.
     """
 
+    @abstractmethod
     def float(self, raw, value):
-        raise NotImplementedError
+        ...
 
+    @abstractmethod
     def int(self, raw, value):
-        raise NotImplementedError
+        ...
 
+    @abstractmethod
     def bool(self, raw, value):
-        raise NotImplementedError
+        ...
 
+    @abstractmethod
     def null(self, raw):
-        raise NotImplementedError
+        ...
 
+    @abstractmethod
     def named_constant(self, raw, value):
-        raise NotImplementedError
+        ...
 
+    @abstractmethod
     def string(self, raw, value):
-        raise NotImplementedError
+        ...
 
+    @abstractmethod
     def regex(self, raw, pattern, flags):
-        raise NotImplementedError
+        ...
 
+    @abstractmethod
     def python_repr(self, raw):
-        raise NotImplementedError
+        ...
 
+    @abstractmethod
     def identifier(self, name):
-        raise NotImplementedError
+        ...
 
+    @abstractmethod
     def open_document(self):
-        raise NotImplementedError
+        ...
 
+    @abstractmethod
     def close_document(self):
-        raise NotImplementedError
+        ...
 
+    @abstractmethod
     def open_array(self, kind):
-        raise NotImplementedError
+        ...
 
+    @abstractmethod
     def array_element(self):
-        raise NotImplementedError
+        ...
 
+    @abstractmethod
     def array_empty_slot(self):
-        raise NotImplementedError
+        ...
 
+    @abstractmethod
     def close_array(self):
-        raise NotImplementedError
+        ...
 
+    @abstractmethod
     def open_mapping(self):
-        raise NotImplementedError
+        ...
 
+    @abstractmethod
     def mapping_key(self):
-        raise NotImplementedError
+        ...
 
+    @abstractmethod
     def mapping_value(self):
-        raise NotImplementedError
+        ...
 
+    @abstractmethod
     def close_mapping(self):
-        raise NotImplementedError
+        ...
 
+    @abstractmethod
     def open_set(self):
-        raise NotImplementedError
+        ...
 
+    @abstractmethod
     def set_element(self):
-        raise NotImplementedError
+        ...
 
+    @abstractmethod
     def close_set(self):
-        raise NotImplementedError
+        ...
 
+    @abstractmethod
     def open_function_call(self, function_name):
-        raise NotImplementedError
+        ...
 
+    @abstractmethod
     def function_call_positional_argument(self):
-        raise NotImplementedError
+        ...
 
+    @abstractmethod
     def function_call_end_positional_arguments(self):
-        raise NotImplementedError
+        ...
 
+    @abstractmethod
     def function_call_start_keyword_arguments(self):
-        raise NotImplementedError
+        ...
 
+    @abstractmethod
     def function_call_keyword_argument_key(self):
-        raise NotImplementedError
+        ...
 
+    @abstractmethod
     def function_call_keyword_argument_value(self):
-        raise NotImplementedError
+        ...
 
+    @abstractmethod
     def function_call_end_keyword_arguments(self):
-        raise NotImplementedError
+        ...
 
+    @abstractmethod
     def close_function_call(self):
-        raise NotImplementedError
+        ...
 
+    @abstractmethod
     def flush(self):
-        raise NotImplementedError
+        ...

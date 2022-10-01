@@ -1,0 +1,25 @@
+repos:
+
+- repo: local
+  hooks:
+  - id: pylint
+    name: pylint
+    entry: pylint
+    args: ['--load-plugins', 'pylint_quotes']
+    language: python
+    types: [python]
+
+  - id: mypy
+    name: mypy
+    entry: mypy
+    language: python
+    types: [python]
+    args: [--show-error-codes]
+
+  - id: pytest
+    name: pytest
+    entry: pytest
+    language: python
+    types: [python]
+    pass_filenames: false
+    always_run: true

@@ -35,7 +35,7 @@ def test_readme_examples():
                 else:
                     # check that the command output is as expcted
                     actual_output = check_output(
-                        '%s %s' % (command, args),
+                        f'{command} {args}',
                         shell=True,
                         cwd=temp_dir,
                         encoding='UTF-8',

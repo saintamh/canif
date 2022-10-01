@@ -39,14 +39,12 @@ class Lexer:
         """
         if message is None:
             if not isinstance(expected, str):
-                expected = '/%s/' % expected.pattern
+                expected = f'/{expected.pattern}/'
             elif not re.search(r'^\w+$', expected):
-                expected = '`%s`' % expected
-            message = 'expected %s, found %r' % (
-                expected,
-                self.text[self.position : self.position + 30],
-            )
-        raise ParserError('Position %d: %s' % (self.position, message))
+                expected = f'`{expected}`'
+            found = self.text[self.position : self.position + 30]
+            message = f'expected {expected}, found {found!r}'
+        raise ParserError(f'Position {self.position}: {message}')
 
     def pop(self, token, checked=False, do_skip=True, message=None):
         """

@@ -20,7 +20,7 @@ class Case(NamedTuple):
 
     def __repr__(self):
         # So that the test IDs are more sensible
-        return '%s < %s' % (self.argv, self.file_name)
+        return f'{self.argv} < {self.file_name}'
 
 
 def iter_test_cases():

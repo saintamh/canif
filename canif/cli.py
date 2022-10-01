@@ -19,7 +19,10 @@ def parse_command_line(
         default_input_encoding=sys.stdin.encoding,
         default_output_encoding=sys.stdout.encoding
         ):
-    parser = argparse.ArgumentParser(description='Pretty-print JSON and JSON-ish data')
+    parser = argparse.ArgumentParser(
+        prog='canif',
+        description='Pretty-print JSON and JSON-ish data',
+    )
     indent_group = parser.add_mutually_exclusive_group()
     indent_group.add_argument(
         '-i',
@@ -67,14 +70,14 @@ def parse_command_line(
         '--input-encoding',
         default=default_input_encoding,
         metavar='ENCODING',
-        help='Character set used for decoding the input (default: %s)' % default_input_encoding.upper(),
+        help=f'Character set used for decoding the input (default: {default_input_encoding.upper()})',
     )
     parser.add_argument(
         '-O',
         '--output-encoding',
         default=default_output_encoding,
         metavar='ENCODING',
-        help='Character set used for encoding the output (default: %s)' % default_output_encoding.upper(),
+        help=f'Character set used for encoding the output (default: {default_output_encoding.upper()})',
     )
     return parser.parse_args(argv[1:])
 
@@ -92,7 +95,7 @@ def main():
     try:
         translate(builder, input_text, single_document=options.single_document)
     except ParserError as error:
-        print('ParserError: %s' % error, file=sys.stderr)
+        print(f'ParserError: {error}', file=sys.stderr)
         sys.exit(1)
     except BrokenPipeError:
         pass

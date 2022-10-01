@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 # standards
+from abc import ABC, abstractmethod
 import json
 
 # canif
@@ -11,7 +12,7 @@ from ..utils import undefined
 # why we have arguments we don't use, but I understand you're confised, pylint: disable=unused-argument
 
 
-class PrimitivesAsJsonMixin:
+class PrimitivesAsJsonMixin(ABC):
     """
     Translate native values into a format that is JSON-compatible. This is also
     """
@@ -21,8 +22,9 @@ class PrimitivesAsJsonMixin:
         NotImplemented: '$NotImplemented',
     }
 
+    @abstractmethod
     def _raw_json(self, json_str):
-        raise NotImplementedError
+        ...
 
     def _dumps(self, value):
         return json.dumps(value, ensure_ascii=self.ensure_ascii)
@@ -67,9 +69,9 @@ class StringablesAsJsonMixin:
         self.identifier_prefix = identifier_prefix
 
     def identifier(self, name):
-        self.string(name, '%s%s' % (self.identifier_prefix, name))
+        self.string(name, f'{self.identifier_prefix}{name}')
 
-    def regex(self, pattern, flags):
+    def regex(self, raw, pattern, flags):
         self.open_mapping()
         self.string(None, '$regex')
         self.mapping_key()
@@ -83,7 +85,7 @@ class StringablesAsJsonMixin:
         self.close_mapping()
 
     def python_repr(self, raw):
-        self.string(raw, '$repr%s' % raw)
+        self.string(raw, f'$repr{raw}')
 
     def array_empty_slot(self):
         self.null(None)
@@ -102,7 +104,7 @@ class FunctionCallsAsJsonMixin:
 
     def open_function_call(self, function_name):
         self.open_mapping()
-        self.string(None, self.special.get(function_name, '%s%s' % (self.identifier_prefix, function_name)))
+        self.string(None, self.special.get(function_name, f'{self.identifier_prefix}{function_name}'))
         self.mapping_key()
         self.open_array(list)
 
